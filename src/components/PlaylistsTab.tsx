@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Plus,
   Trash2,
@@ -18,7 +18,9 @@ import {
   Sparkles,
   MoreVertical,
   GripVertical,
+  Shuffle,
 } from 'lucide-react';
+import { Reorder, useDragControls } from 'motion/react';
 import { Playlist, Song, SortField, SortDirection, M3ThemePalette } from '../types';
 import { formatDuration, exportPlaylistToFile } from '../utils/exportHelper';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -40,6 +42,164 @@ interface PlaylistsTabProps {
   onOpenAddSongsModal: (playlist: Playlist) => void;
   onOpenSongMenu?: (song: Song) => void;
 }
+
+interface PlaylistItemRowProps {
+  song: Song;
+  idx: number;
+  totalLength: number;
+  isCurrent: boolean;
+  currentTheme: M3ThemePalette;
+  isFavoritesCollection: boolean;
+  isManualReorderMode: boolean;
+  onPlaySong: (song: Song) => void;
+  moveSong: (index: number, direction: 'up' | 'down') => void;
+  onOpenSongMenu?: (song: Song) => void;
+  onRemoveSong: (songId: string) => void;
+}
+
+const PlaylistItemRow: React.FC<PlaylistItemRowProps> = ({
+  song,
+  idx,
+  totalLength,
+  isCurrent,
+  currentTheme,
+  isFavoritesCollection,
+  isManualReorderMode,
+  onPlaySong,
+  moveSong,
+  onOpenSongMenu,
+  onRemoveSong,
+}) => {
+  const dragControls = useDragControls();
+
+  return (
+    <Reorder.Item
+      value={song}
+      id={song.id}
+      dragListener={false}
+      dragControls={dragControls}
+      className={`flex items-center justify-between py-2 px-3 rounded-xl transition-colors duration-150 relative bg-white select-none ${
+        isCurrent ? 'bg-neutral-100/90' : 'hover:bg-neutral-50'
+      }`}
+      style={{
+        boxShadow: isCurrent ? `0 0 0 1px ${currentTheme.primary}40` : undefined,
+      }}
+      whileDrag={{
+        scale: 1.02,
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+        backgroundColor: '#F8FAFC',
+        zIndex: 50,
+      }}
+    >
+      {/* Drag Handle (Mobile Android Touch & Desktop Mouse via Pointer Events) */}
+      {!isFavoritesCollection && (
+        <div
+          title="Pressione e arraste para reordenar"
+          aria-label="Arrastar para reordenar"
+          className="p-2 -ml-1.5 mr-1 text-neutral-400 hover:text-neutral-700 active:text-neutral-900 cursor-grab active:cursor-grabbing touch-none select-none rounded-lg hover:bg-black/5 transition-transform"
+          onPointerDown={(e) => dragControls.start(e)}
+        >
+          <GripVertical className="w-4 h-4" />
+        </div>
+      )}
+
+      <div
+        className="flex items-center gap-3 min-w-0 pr-2 cursor-pointer flex-1"
+        onClick={() => onPlaySong(song)}
+      >
+        <span className="text-xs font-mono text-neutral-400 w-5 text-center shrink-0">
+          {idx + 1}
+        </span>
+
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-xs relative"
+          style={{
+            backgroundColor: currentTheme.secondaryContainer,
+            color: currentTheme.primary,
+          }}
+        >
+          {song.artworkUrl ? (
+            <img
+              src={song.artworkUrl}
+              alt={song.title}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Music className="w-4 h-4" />
+          )}
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <p
+            className={`text-xs sm:text-sm font-semibold truncate ${
+              isCurrent ? 'font-bold' : 'text-neutral-900'
+            }`}
+            style={{ color: isCurrent ? currentTheme.primary : undefined }}
+          >
+            {song.title}
+          </p>
+          <p className="text-xs text-neutral-500 truncate">
+            {song.artist} • {song.album}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        <span className="text-xs font-mono text-neutral-400 mr-1.5 hidden sm:inline">
+          {formatDuration(song.duration)}
+        </span>
+
+        {/* Manual reorder buttons (Accessible alternative) */}
+        {isManualReorderMode && !isFavoritesCollection && (
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              disabled={idx === 0}
+              onClick={() => moveSong(idx, 'up')}
+              className="p-1 rounded text-neutral-600 hover:bg-neutral-200 disabled:opacity-30 cursor-pointer"
+              title="Mover para cima"
+            >
+              <MoveUp className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              disabled={idx === totalLength - 1}
+              onClick={() => moveSong(idx, 'down')}
+              className="p-1 rounded text-neutral-600 hover:bg-neutral-200 disabled:opacity-30 cursor-pointer"
+              title="Mover para baixo"
+            >
+              <MoveDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Contextual menu button */}
+        {onOpenSongMenu && (
+          <button
+            type="button"
+            onClick={() => onOpenSongMenu(song)}
+            title="Mais opções"
+            className="p-1.5 rounded-full text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 transition-colors cursor-pointer"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Remove from playlist button */}
+        {!isFavoritesCollection && (
+          <button
+            type="button"
+            onClick={() => onRemoveSong(song.id)}
+            title="Remover da playlist"
+            className="p-1.5 rounded-full text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+    </Reorder.Item>
+  );
+};
 
 export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
   playlists,
@@ -77,12 +237,6 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
   // Delete Confirmation state
   const [playlistToDelete, setPlaylistToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  // Drag and drop state for songs in playlist
-  const [draggedSongIndex, setDraggedSongIndex] = useState<number | null>(null);
-  const [dragOverSongIndex, setDragOverSongIndex] = useState<number | null>(null);
-  const touchStartYRef = useRef<number | null>(null);
-  const touchStartIndexRef = useRef<number | null>(null);
-
   const isFavoritesCollection = selectedPlaylistId === 'special_favorites';
 
   const selectedPlaylist = useMemo(() => {
@@ -105,34 +259,33 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
     let resolved: Song[] = [];
     if (isFavoritesCollection) {
       resolved = allSongs.filter((s) => s.isFavorite);
-    } else {
-      const songMap = new Map<string, Song>();
-      allSongs.forEach((s) => songMap.set(s.id, s));
-      selectedPlaylist.songIds.forEach((id) => {
-        const s = songMap.get(id);
-        if (s) resolved.push(s);
-      });
-    }
-
-    // Apply sorting if not in custom manual order
-    if (sortField === 'custom') {
+      if (sortField !== 'custom') {
+        const sorted = [...resolved];
+        sorted.sort((a, b) => {
+          let comp = 0;
+          if (sortField === 'name') comp = (a.title || '').localeCompare(b.title || '');
+          if (sortField === 'artist') comp = (a.artist || '').localeCompare(b.artist || '');
+          if (sortField === 'duration') comp = (a.duration || 0) - (b.duration || 0);
+          return sortDirection === 'asc' ? comp : -comp;
+        });
+        return sorted;
+      }
       return resolved;
     }
 
-    const sorted = [...resolved];
-    sorted.sort((a, b) => {
-      let comp = 0;
-      if (sortField === 'name') comp = a.title.localeCompare(b.title);
-      if (sortField === 'artist') comp = a.artist.localeCompare(b.artist);
-      if (sortField === 'duration') comp = a.duration - b.duration;
-      return sortDirection === 'asc' ? comp : -comp;
+    const songMap = new Map<string, Song>();
+    allSongs.forEach((s) => songMap.set(s.id, s));
+    selectedPlaylist.songIds.forEach((id) => {
+      const s = songMap.get(id);
+      if (s) resolved.push(s);
     });
-    return sorted;
+
+    return resolved;
   }, [selectedPlaylist, allSongs, sortField, sortDirection, isFavoritesCollection]);
 
   // Playlist stats
   const totalDuration = useMemo(() => {
-    return playlistSongs.reduce((acc, curr) => acc + curr.duration, 0);
+    return playlistSongs.reduce((acc, curr) => acc + (curr.duration || 0), 0);
   }, [playlistSongs]);
 
   const handleCreateSubmit = (e: React.FormEvent) => {
@@ -165,88 +318,57 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
     onReorderPlaylistSongs(selectedPlaylist.id, currentIds);
   };
 
-  // Reorder songs by arbitrary index (drag and drop)
-  const reorderSongToIndex = (fromIndex: number, toIndex: number) => {
+  // Drag-and-drop reorder handler
+  const handleReorderPlaylist = (newSongs: Song[]) => {
     if (!selectedPlaylist || isFavoritesCollection) return;
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0) return;
-    const currentIds = [...selectedPlaylist.songIds];
-    if (fromIndex >= currentIds.length || toIndex >= currentIds.length) return;
-
-    const [movedId] = currentIds.splice(fromIndex, 1);
-    currentIds.splice(toIndex, 0, movedId);
     setSortField('custom');
-    onReorderPlaylistSongs(selectedPlaylist.id, currentIds);
+    onReorderPlaylistSongs(selectedPlaylist.id, newSongs.map((s) => s.id));
   };
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    if (isFavoritesCollection) return;
-    setDraggedSongIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', index.toString());
-  };
+  // Sort songs in playlist and persist new order
+  const handleSortPlaylist = (field: 'name' | 'artist' | 'duration') => {
+    const newDir = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
+    setSortField(field);
+    setSortDirection(newDir);
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    if (isFavoritesCollection) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (dragOverSongIndex !== index) {
-      setDragOverSongIndex(index);
+    if (!selectedPlaylist) return;
+
+    if (isFavoritesCollection) {
+      // In-memory sort handled by useMemo for favorites
+      return;
     }
+
+    const songMap = new Map<string, Song>();
+    allSongs.forEach((s) => songMap.set(s.id, s));
+    const list: Song[] = [];
+    selectedPlaylist.songIds.forEach((id) => {
+      const s = songMap.get(id);
+      if (s) list.push(s);
+    });
+
+    list.sort((a, b) => {
+      let comp = 0;
+      if (field === 'name') comp = (a.title || '').localeCompare(b.title || '');
+      if (field === 'artist') comp = (a.artist || '').localeCompare(b.artist || '');
+      if (field === 'duration') comp = (a.duration || 0) - (b.duration || 0);
+      return newDir === 'asc' ? comp : -comp;
+    });
+
+    onReorderPlaylistSongs(selectedPlaylist.id, list.map((s) => s.id));
   };
 
-  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
-    if (isFavoritesCollection) return;
-    e.preventDefault();
-    if (draggedSongIndex !== null && draggedSongIndex !== targetIndex) {
-      reorderSongToIndex(draggedSongIndex, targetIndex);
-    }
-    setDraggedSongIndex(null);
-    setDragOverSongIndex(null);
+  const handleShufflePlaylist = () => {
+    if (!selectedPlaylist || isFavoritesCollection) return;
+    const shuffledIds = [...selectedPlaylist.songIds].sort(() => Math.random() - 0.5);
+    setSortField('custom');
+    onReorderPlaylistSongs(selectedPlaylist.id, shuffledIds);
   };
 
-  const handleDragEnd = () => {
-    setDraggedSongIndex(null);
-    setDragOverSongIndex(null);
-  };
-
-  // Mobile Touch handlers for dragging inside playlist
-  const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    if (isFavoritesCollection) return;
-    touchStartYRef.current = e.touches[0].clientY;
-    touchStartIndexRef.current = index;
-    setDraggedSongIndex(index);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (touchStartYRef.current === null || touchStartIndexRef.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - touchStartYRef.current;
-    const threshold = 48; // row height in pixels
-
-    if (Math.abs(diff) > threshold) {
-      const steps = Math.round(diff / threshold);
-      const newTarget = Math.max(
-        0,
-        Math.min(playlistSongs.length - 1, touchStartIndexRef.current + steps)
-      );
-      if (newTarget !== dragOverSongIndex) {
-        setDragOverSongIndex(newTarget);
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (
-      touchStartIndexRef.current !== null &&
-      dragOverSongIndex !== null &&
-      touchStartIndexRef.current !== dragOverSongIndex
-    ) {
-      reorderSongToIndex(touchStartIndexRef.current, dragOverSongIndex);
-    }
-    touchStartYRef.current = null;
-    touchStartIndexRef.current = null;
-    setDraggedSongIndex(null);
-    setDragOverSongIndex(null);
+  const handleReversePlaylist = () => {
+    if (!selectedPlaylist || isFavoritesCollection) return;
+    const reversedIds = [...selectedPlaylist.songIds].reverse();
+    setSortField('custom');
+    onReorderPlaylistSongs(selectedPlaylist.id, reversedIds);
   };
 
   // Handle Export
@@ -445,46 +567,79 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
         </div>
 
         {/* Smart Sorting controls within playlist */}
-        {playlistSongs.length > 1 && !isManualReorderMode && (
-          <div className="flex items-center justify-between mb-3 px-1 text-xs text-neutral-600">
-            <span className="font-medium">Classificar lista por:</span>
-            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-neutral-200">
+        {playlistSongs.length > 1 && (
+          <div className="flex flex-wrap items-center justify-between gap-1.5 mb-3 px-1 py-1.5 bg-neutral-50 rounded-2xl border border-neutral-100 text-xs">
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-neutral-500 font-medium px-1 hidden sm:inline">
+                Classificar por:
+              </span>
               <button
-                onClick={() => {
-                  setSortField('name');
-                  setSortDirection((prev) => (sortField === 'name' && prev === 'asc' ? 'desc' : 'asc'));
-                }}
-                className={`px-2 py-1 rounded-lg text-xs transition-colors ${
-                  sortField === 'name' ? 'bg-neutral-100 font-bold text-black' : 'text-neutral-600'
+                type="button"
+                onClick={() => handleSortPlaylist('name')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  sortField === 'name'
+                    ? 'bg-white shadow-xs font-bold text-neutral-900 border border-neutral-200'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
                 }`}
+                style={{
+                  color: sortField === 'name' ? currentTheme.primary : undefined,
+                }}
               >
                 Nome {sortField === 'name' && (sortDirection === 'asc' ? '↑' : '↓')}
               </button>
 
               <button
-                onClick={() => {
-                  setSortField('artist');
-                  setSortDirection((prev) => (sortField === 'artist' && prev === 'asc' ? 'desc' : 'asc'));
-                }}
-                className={`px-2 py-1 rounded-lg text-xs transition-colors ${
-                  sortField === 'artist' ? 'bg-neutral-100 font-bold text-black' : 'text-neutral-600'
+                type="button"
+                onClick={() => handleSortPlaylist('artist')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  sortField === 'artist'
+                    ? 'bg-white shadow-xs font-bold text-neutral-900 border border-neutral-200'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
                 }`}
+                style={{
+                  color: sortField === 'artist' ? currentTheme.primary : undefined,
+                }}
               >
                 Artista {sortField === 'artist' && (sortDirection === 'asc' ? '↑' : '↓')}
               </button>
 
               <button
-                onClick={() => {
-                  setSortField('duration');
-                  setSortDirection((prev) => (sortField === 'duration' && prev === 'asc' ? 'desc' : 'asc'));
-                }}
-                className={`px-2 py-1 rounded-lg text-xs transition-colors ${
-                  sortField === 'duration' ? 'bg-neutral-100 font-bold text-black' : 'text-neutral-600'
+                type="button"
+                onClick={() => handleSortPlaylist('duration')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  sortField === 'duration'
+                    ? 'bg-white shadow-xs font-bold text-neutral-900 border border-neutral-200'
+                    : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200/60'
                 }`}
+                style={{
+                  color: sortField === 'duration' ? currentTheme.primary : undefined,
+                }}
               >
                 Duração {sortField === 'duration' && (sortDirection === 'asc' ? '↑' : '↓')}
               </button>
             </div>
+
+            {!isFavoritesCollection && (
+              <div className="flex items-center gap-1 ml-auto">
+                <button
+                  type="button"
+                  onClick={handleReversePlaylist}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/60 transition-colors cursor-pointer"
+                  title="Inverter ordem da playlist"
+                >
+                  <ArrowUpDown className="w-3.5 h-3.5" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShufflePlaylist}
+                  className="p-1.5 rounded-lg text-neutral-500 hover:text-neutral-800 hover:bg-neutral-200/60 transition-colors cursor-pointer"
+                  title="Embaralhar playlist"
+                >
+                  <Shuffle className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -500,8 +655,9 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
             </p>
             {!isFavoritesCollection && (
               <button
+                type="button"
                 onClick={() => onOpenAddSongsModal(selectedPlaylist)}
-                className="px-4 py-2 rounded-full text-xs font-semibold text-white shadow-xs"
+                className="px-4 py-2 rounded-full text-xs font-semibold text-white shadow-xs cursor-pointer active:scale-95"
                 style={{ backgroundColor: currentTheme.primary }}
               >
                 Adicionar Músicas
@@ -509,143 +665,31 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
             )}
           </div>
         ) : (
-          <div className="divide-y divide-neutral-100 bg-white rounded-2xl border border-neutral-100 shadow-xs overflow-hidden">
-            {playlistSongs.map((song, idx) => {
-              const isCurrent = currentSong?.id === song.id;
-              const isBeingDragged = draggedSongIndex === idx;
-              const isDropTarget = dragOverSongIndex === idx && draggedSongIndex !== idx;
-
-              return (
-                <div
-                  key={`${song.id}-${idx}`}
-                  draggable={!isFavoritesCollection}
-                  onDragStart={(e) => handleDragStart(e, idx)}
-                  onDragOver={(e) => handleDragOver(e, idx)}
-                  onDrop={(e) => handleDrop(e, idx)}
-                  onDragEnd={handleDragEnd}
-                  className={`flex items-center justify-between py-2 px-3 rounded-xl transition-all duration-150 relative ${
-                    isBeingDragged
-                      ? 'opacity-40 scale-[0.98] bg-neutral-100 border border-dashed border-neutral-400'
-                      : isDropTarget
-                      ? 'bg-neutral-100/90 ring-2 ring-inset'
-                      : isCurrent
-                      ? 'bg-neutral-100/90'
-                      : 'hover:bg-neutral-50'
-                  }`}
-                  style={{
-                    boxShadow: isDropTarget ? `0 0 0 2px ${currentTheme.primary}` : undefined,
-                  }}
-                >
-                  {/* Drag Handle (Desktop drag & Mobile Touch-drag) */}
-                  {!isFavoritesCollection && (
-                    <div
-                      title="Arrastar para reordenar playlist"
-                      aria-label="Arrastar para reordenar"
-                      className="p-1.5 -ml-1.5 mr-1 text-neutral-400 hover:text-neutral-700 cursor-grab active:cursor-grabbing touch-none select-none rounded-lg hover:bg-black/5"
-                      onTouchStart={(e) => handleTouchStart(e, idx)}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
-                    >
-                      <GripVertical className="w-4 h-4" />
-                    </div>
-                  )}
-
-                  <div
-                    className="flex items-center gap-3 min-w-0 pr-2 cursor-pointer flex-1"
-                    onClick={() => onPlaySong(song)}
-                  >
-                    <span className="text-xs font-mono text-neutral-400 w-5 text-center shrink-0">
-                      {idx + 1}
-                    </span>
-
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden shadow-xs relative"
-                      style={{
-                        backgroundColor: currentTheme.secondaryContainer,
-                        color: currentTheme.primary,
-                      }}
-                    >
-                      {song.artworkUrl ? (
-                        <img
-                          src={song.artworkUrl}
-                          alt={song.title}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Music className="w-4 h-4" />
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={`text-xs sm:text-sm font-semibold truncate ${
-                          isCurrent ? 'font-bold' : 'text-neutral-900'
-                        }`}
-                        style={{ color: isCurrent ? currentTheme.primary : undefined }}
-                      >
-                        {song.title}
-                      </p>
-                      <p className="text-xs text-neutral-500 truncate">
-                        {song.artist} • {song.album}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-xs font-mono text-neutral-400 mr-1.5 hidden sm:inline">
-                      {formatDuration(song.duration)}
-                    </span>
-
-                    {/* Manual reorder buttons (Accessible alternative) */}
-                    {isManualReorderMode && (
-                      <div className="flex items-center gap-0.5">
-                        <button
-                          disabled={idx === 0}
-                          onClick={() => moveSong(idx, 'up')}
-                          className="p-1 rounded text-neutral-600 hover:bg-neutral-200 disabled:opacity-30"
-                          title="Mover para cima"
-                        >
-                          <MoveUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          disabled={idx === playlistSongs.length - 1}
-                          onClick={() => moveSong(idx, 'down')}
-                          className="p-1 rounded text-neutral-600 hover:bg-neutral-200 disabled:opacity-30"
-                          title="Mover para baixo"
-                        >
-                          <MoveDown className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Contextual menu button */}
-                    {onOpenSongMenu && (
-                      <button
-                        onClick={() => onOpenSongMenu(song)}
-                        title="Mais opções"
-                        className="p-1.5 rounded-full text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100 transition-colors"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
-                    )}
-
-                    {/* Remove from playlist button */}
-                    {!isFavoritesCollection && (
-                      <button
-                        onClick={() =>
-                          onRemoveSongFromPlaylist(selectedPlaylist.id, song.id)
-                        }
-                        title="Remover da playlist"
-                        className="p-1.5 rounded-full text-neutral-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <Reorder.Group
+            axis="y"
+            values={playlistSongs}
+            onReorder={handleReorderPlaylist}
+            className="divide-y divide-neutral-100 bg-white rounded-2xl border border-neutral-100 shadow-xs overflow-hidden"
+          >
+            {playlistSongs.map((song, idx) => (
+              <PlaylistItemRow
+                key={song.id}
+                song={song}
+                idx={idx}
+                totalLength={playlistSongs.length}
+                isCurrent={currentSong?.id === song.id}
+                currentTheme={currentTheme}
+                isFavoritesCollection={isFavoritesCollection}
+                isManualReorderMode={isManualReorderMode}
+                onPlaySong={onPlaySong}
+                moveSong={moveSong}
+                onOpenSongMenu={onOpenSongMenu}
+                onRemoveSong={(songId) =>
+                  onRemoveSongFromPlaylist(selectedPlaylist.id, songId)
+                }
+              />
+            ))}
+          </Reorder.Group>
         )}
 
         {/* Export SAF Modal */}

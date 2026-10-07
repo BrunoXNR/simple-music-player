@@ -13,6 +13,7 @@ export interface Song {
   folder?: string;
   artworkUrl?: string;
   unavailable?: boolean;
+  queueInstanceId?: string;
 }
 
 export type LibraryFilter = 'all' | 'artists' | 'albums' | 'folders' | 'favorites';

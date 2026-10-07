@@ -431,34 +431,45 @@ export default function App() {
     skipNext();
   }, [repeatMode, queue, currentSong, isShuffle]);
 
+  // Helper to ensure each queue item has a stable unique instance key for drag & drop
+  const createQueueItem = (song: Song): Song => ({
+    ...song,
+    queueInstanceId:
+      song.queueInstanceId ||
+      `${song.id}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+  });
+
   // Play Song immediately
   const playSong = (song: Song) => {
-    setCurrentSong(song);
+    const item = createQueueItem(song);
+    setCurrentSong(item);
     setIsPlaying(true);
     // Ensure current song is in queue
     if (!queue.some((s) => s.id === song.id)) {
-      setQueue((prev) => [song, ...prev]);
+      setQueue((prev) => [item, ...prev]);
     }
   };
 
   // Play a full custom queue (e.g. from playlist or artist/album Play All)
   const playQueue = (songsToPlay: Song[]) => {
     if (songsToPlay.length === 0) return;
-    setQueue(songsToPlay);
-    setCurrentSong(songsToPlay[0]);
+    const items = songsToPlay.map((s) => createQueueItem(s));
+    setQueue(items);
+    setCurrentSong(items[0]);
     setIsPlaying(true);
   };
 
   // Queue Operations: Add to queue
   const handleAddToQueue = (song: Song) => {
+    const item = createQueueItem(song);
     setQueue((prev) => {
       // If queue is empty, set as current song too
       if (prev.length === 0) {
-        setCurrentSong(song);
+        setCurrentSong(item);
         setIsPlaying(true);
-        return [song];
+        return [item];
       }
-      return [...prev, song];
+      return [...prev, item];
     });
     setScanMessage(`"${song.title}" adicionada à fila`);
     setTimeout(() => setScanMessage(null), 2500);
@@ -466,18 +477,19 @@ export default function App() {
 
   // Queue Operations: Play next (insert immediately after current song)
   const handlePlayNext = (song: Song) => {
+    const item = createQueueItem(song);
     setQueue((prev) => {
       if (prev.length === 0 || !currentSong) {
-        setCurrentSong(song);
+        setCurrentSong(item);
         setIsPlaying(true);
-        return [song];
+        return [item];
       }
       const currentIndex = prev.findIndex((s) => s.id === currentSong.id);
       if (currentIndex === -1) {
-        return [currentSong, song, ...prev];
+        return [currentSong, item, ...prev];
       }
       const updated = [...prev];
-      updated.splice(currentIndex + 1, 0, song);
+      updated.splice(currentIndex + 1, 0, item);
       return updated;
     });
     setScanMessage(`"${song.title}" tocará a seguir`);
@@ -512,6 +524,11 @@ export default function App() {
       updated.splice(toIndex, 0, moved);
       return updated;
     });
+  };
+
+  // Queue Operations: Full Reorder (Drag & Drop or Sort)
+  const handleReorderQueue = (newQueue: Song[]) => {
+    setQueue(newQueue);
   };
 
   // Queue Operations: Clear queue
@@ -994,6 +1011,7 @@ export default function App() {
         onPlaySong={playSong}
         onRemoveFromQueue={handleRemoveFromQueue}
         onMoveQueueItem={handleMoveQueueItem}
+        onReorderQueue={handleReorderQueue}
         onClearQueue={handleClearQueue}
       />
 

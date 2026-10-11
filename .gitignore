@@ -1,8 +1,22 @@
-node_modules/
+# Gradle / Kotlin
+.gradle/
+.kotlin/
 build/
-dist/
-coverage/
+local.properties
+
+# Android Studio / IntelliJ
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Signing keys: never commit
+*.jks
+*.keystore
+keystore.properties
+
+# OS
 .DS_Store
+desktop.ini
 *.log
-.env*
-!.env.example

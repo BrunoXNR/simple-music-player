@@ -1,6 +1,0 @@
-{
-  "name": "Minimalist Local Music Player",
-  "description": "A minimalist local audio player with Material 3 design, local file scanning, playlist management, smart sorting, and text/csv playlist export.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

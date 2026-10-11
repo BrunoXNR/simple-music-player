@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pt">
+    <string name="app_name" translatable="false">Simple Music Player</string>
+
+    <!-- Navigation -->
+    <string name="tab_songs">Músicas</string>
+    <string name="tab_playlists">Playlists</string>
+    <string name="favorites">Favoritos</string>
+    <string name="my_playlists">Minhas playlists</string>
+    <string name="queue">Fila de reprodução</string>
+    <string name="now_playing">Tocando agora</string>
+
+    <!-- Library -->
+    <string name="unknown_artist">Artista desconhecido</string>
+    <string name="unknown_album">Álbum desconhecido</string>
+    <string name="search_hint">Buscar músicas</string>
+    <string name="filter_all">Todas</string>
+    <string name="filter_favorites">Favoritas</string>
+    <string name="filter_folders">Pastas</string>
+    <string name="filter_albums">Álbuns</string>
+    <string name="filter_artists">Artistas</string>
+    <string name="various_artists">Vários artistas</string>
+    <string name="internal_storage">Armazenamento interno</string>
+    <plurals name="folder_count">
+        <item quantity="one">%d pasta</item>
+        <item quantity="many">%d pastas</item>
+        <item quantity="other">%d pastas</item>
+    </plurals>
+    <plurals name="album_count">
+        <item quantity="one">%d álbum</item>
+        <item quantity="many">%d álbuns</item>
+        <item quantity="other">%d álbuns</item>
+    </plurals>
+    <plurals name="artist_count">
+        <item quantity="one">%d artista</item>
+        <item quantity="many">%d artistas</item>
+        <item quantity="other">%d artistas</item>
+    </plurals>
+    <string name="sort_title">Título</string>
+    <string name="sort_artist">Artista</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_duration">Duração</string>
+    <string name="sort_date_added">Adicionadas recentemente</string>
+    <plurals name="song_count">
+        <item quantity="one">%d música</item>
+        <item quantity="many">%d músicas</item>
+        <item quantity="other">%d músicas</item>
+    </plurals>
+
+    <!-- Actions -->
+    <string name="action_play">Tocar</string>
+    <string name="action_pause">Pausar</string>
+    <string name="action_next">Próxima</string>
+    <string name="action_previous">Anterior</string>
+    <string name="action_shuffle">Aleatório</string>
+    <string name="action_sort">Ordenar</string>
+    <string name="action_clear_search">Limpar busca</string>
+    <string name="action_more_options">Mais opções</string>
+    <string name="action_play_next">Tocar a seguir</string>
+    <string name="action_add_to_queue">Adicionar à fila</string>
+    <string name="action_add_to_playlist">Adicionar à playlist</string>
+    <string name="action_favorite">Adicionar aos favoritos</string>
+    <string name="action_unfavorite">Remover dos favoritos</string>
+    <string name="action_remove_from_playlist">Remover da playlist</string>
+    <string name="action_remove_from_queue">Remover da fila</string>
+    <string name="action_new_playlist">Nova playlist</string>
+    <string name="action_create">Criar</string>
+    <string name="action_rename">Renomear</string>
+    <string name="action_save">Salvar</string>
+    <string name="action_delete">Excluir</string>
+    <string name="action_delete_playlist">Excluir playlist</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_clear">Limpar</string>
+    <string name="action_close">Fechar</string>
+    <string name="action_back">Voltar</string>
+    <string name="action_done">Concluir</string>
+    <string name="action_collapse_player">Minimizar player</string>
+    <string name="action_drag_to_reorder">Arraste para reordenar</string>
+
+    <!-- Player -->
+    <string name="shuffle_on">Aleatório ativado</string>
+    <string name="shuffle_off">Aleatório desativado</string>
+    <string name="repeat_off">Repetição desativada</string>
+    <string name="repeat_all">Repetir todas</string>
+    <string name="repeat_one">Repetir uma</string>
+    <string name="message_added_to_queue">“%1$s” adicionada à fila</string>
+    <string name="message_play_next">“%1$s” tocará a seguir</string>
+    <string name="clear_queue_title">Limpar fila?</string>
+    <string name="clear_queue_message">Todas as músicas da fila serão removidas, exceto a que está tocando.</string>
+
+    <!-- Playlists -->
+    <string name="playlist_name">Nome da playlist</string>
+    <string name="add_to_playlist_title">Adicionar à playlist</string>
+    <string name="add_songs_title">Adicionar músicas</string>
+    <string name="delete_playlist_title">Excluir playlist?</string>
+    <string name="delete_playlist_message">A playlist “%1$s” será excluída. Suas músicas continuam no aparelho.</string>
+
+    <!-- Empty states -->
+    <string name="empty_library_title">Nenhuma música encontrada</string>
+    <string name="empty_library_message">Copie seus arquivos de música (MP3, M4A, FLAC, OGG, WAV) para o aparelho, por exemplo na pasta Música. Eles aparecem aqui automaticamente.</string>
+    <string name="empty_search_title">Nenhum resultado</string>
+    <string name="empty_search_message">Tente buscar por outro título, artista ou álbum.</string>
+    <string name="empty_favorites_title">Nenhuma favorita ainda</string>
+    <string name="empty_favorites_message">Toque no coração de uma música para adicioná-la aos favoritos.</string>
+    <string name="empty_collection_title">Lista vazia</string>
+    <string name="empty_playlist_message">Toque em + para adicionar músicas a esta playlist.</string>
+    <string name="empty_playlists_message">Crie playlists para organizar suas músicas.</string>
+
+    <!-- Permission -->
+    <string name="permission_title">Acesso às suas músicas</string>
+    <string name="permission_message">Para encontrar e tocar as músicas salvas no seu aparelho, o app precisa de permissão para ler arquivos de áudio. Nada sai do seu celular.</string>
+    <string name="permission_denied_message">A permissão foi negada. Para usar o app, abra as configurações e permita o acesso a “Músicas e áudio”.</string>
+    <string name="permission_grant">Permitir acesso</string>
+    <string name="permission_open_settings">Abrir configurações</string>
+</resources>

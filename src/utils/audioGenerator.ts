@@ -131,8 +131,11 @@ export async function createSynthTrack(
 
   const artworkUrl = generateAlbumArtwork(title, artist, album);
 
+  // Stable id derived from the title so favorites, playlists and queue survive reloads/rescans
+  const stableId = title.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+
   return {
-    id: `local_synth_${Math.random().toString(36).substring(2, 9)}`,
+    id: `local_synth_${stableId}`,
     title,
     artist,
     album,

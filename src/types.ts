@@ -20,6 +20,7 @@ export type LibraryFilter = 'all' | 'artists' | 'albums' | 'folders' | 'favorite
 
 export interface SavedPlayerState {
   currentSongId: string | null;
+  currentQueueIndex?: number; // disambiguates when the same song appears more than once in the queue
   currentTime: number;
   queueIds: string[];
   isShuffle: boolean;

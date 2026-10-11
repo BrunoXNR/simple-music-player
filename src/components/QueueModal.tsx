@@ -15,6 +15,7 @@ import {
 import { Reorder, useDragControls } from 'motion/react';
 import { Song, M3ThemePalette, SortField, SortDirection } from '../types';
 import { formatDuration } from '../utils/exportHelper';
+import { isSameQueueItem, shuffleArray } from '../utils/queue';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface QueueModalProps {
@@ -227,7 +228,7 @@ export const QueueModal: React.FC<QueueModalProps> = ({
 
   const handleShuffleQueue = () => {
     setSortField('custom');
-    const shuffled = [...queue].sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(queue);
     onReorderQueue(shuffled);
   };
 
@@ -419,7 +420,7 @@ export const QueueModal: React.FC<QueueModalProps> = ({
                     song={song}
                     idx={idx}
                     totalLength={queue.length}
-                    isCurrent={currentSong?.id === song.id}
+                    isCurrent={isSameQueueItem(currentSong, song)}
                     isPlaying={isPlaying}
                     currentTheme={currentTheme}
                     onPlaySong={onPlaySong}

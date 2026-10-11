@@ -23,6 +23,7 @@ import {
 import { Reorder, useDragControls } from 'motion/react';
 import { Playlist, Song, SortField, SortDirection, M3ThemePalette } from '../types';
 import { formatDuration, exportPlaylistToFile } from '../utils/exportHelper';
+import { shuffleArray } from '../utils/queue';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface PlaylistsTabProps {
@@ -359,7 +360,7 @@ export const PlaylistsTab: React.FC<PlaylistsTabProps> = ({
 
   const handleShufflePlaylist = () => {
     if (!selectedPlaylist || isFavoritesCollection) return;
-    const shuffledIds = [...selectedPlaylist.songIds].sort(() => Math.random() - 0.5);
+    const shuffledIds = shuffleArray(selectedPlaylist.songIds);
     setSortField('custom');
     onReorderPlaylistSongs(selectedPlaylist.id, shuffledIds);
   };

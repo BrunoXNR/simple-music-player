@@ -3,10 +3,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Song, Playlist, RepeatMode, M3ThemeColor, SavedPlayerState } from './types';
 import { THEME_PALETTES } from './utils/theme';
 import { getInitialLocalAudioFiles, resolveSongMetadata, generateAlbumArtwork } from './utils/audioGenerator';
+import { createQueueItem, findQueueIndex, isSameQueueItem, shuffleArray } from './utils/queue';
+import {
+  loadUserTracks,
+  saveUserTrack,
+  deleteUserTrack,
+  hashString,
+  detectAudioFormat,
+  probeDuration,
+} from './utils/libraryStore';
 import { TopAppBar } from './components/TopAppBar';
 import { NavigationBar, MainTab } from './components/NavigationBar';
 import { SongsTab } from './components/SongsTab';
@@ -18,12 +27,24 @@ import { AndroidCodeModal } from './components/AndroidCodeModal';
 import { AddSongsModal } from './components/AddSongsModal';
 import { QueueModal } from './components/QueueModal';
 import { SongActionMenu } from './components/SongActionMenu';
+import { PlaylistPickerModal } from './components/PlaylistPickerModal';
 
 const PLAYLISTS_STORAGE_KEY = 'minimalist_music_playlists_v1';
 const THEME_STORAGE_KEY = 'minimalist_music_theme_v1';
 const PERMISSION_STORAGE_KEY = 'minimalist_music_permission_granted';
 const FAVORITES_STORAGE_KEY = 'minimalist_music_favorites_v1';
 const PLAYER_STATE_KEY = 'minimalist_music_player_state_v1';
+const DEMO_PLAYLIST_ID = 'pl_chill';
+
+function loadSavedPlayerState(): Partial<SavedPlayerState> | null {
+  try {
+    const saved = localStorage.getItem(PLAYER_STATE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch (err) {
+    console.warn('Failed to parse saved player state', err);
+  }
+  return null;
+}
 
 export default function App() {
   // Navigation & View State
@@ -46,6 +67,7 @@ export default function App() {
   const [isAndroidCodeModalOpen, setIsAndroidCodeModalOpen] = useState(false);
   const [isAddSongsModalOpen, setIsAddSongsModalOpen] = useState(false);
   const [selectedPlaylistForAdd, setSelectedPlaylistForAdd] = useState<Playlist | null>(null);
+  const [playlistPickerSong, setPlaylistPickerSong] = useState<Song | null>(null);
 
   // Queue Modal & Contextual Menu States
   const [isQueueModalOpen, setIsQueueModalOpen] = useState(false);
@@ -69,6 +91,8 @@ export default function App() {
   const [scanMessage, setScanMessage] = useState<string | null>(null);
 
   // Playlists State (Room Database simulation)
+  // The demo playlist is only seeded on the very first run (nothing saved yet)
+  const [shouldSeedDemoPlaylist] = useState(() => localStorage.getItem(PLAYLISTS_STORAGE_KEY) === null);
   const [playlists, setPlaylists] = useState<Playlist[]>(() => {
     try {
       const saved = localStorage.getItem(PLAYLISTS_STORAGE_KEY);
@@ -78,7 +102,7 @@ export default function App() {
     }
     return [
       {
-        id: 'pl_chill',
+        id: DEMO_PLAYLIST_ID,
         name: 'Acoustic & Ambient',
         createdAt: Date.now() - 172800000,
         songIds: [],
@@ -87,54 +111,75 @@ export default function App() {
   });
 
   // Playback & Queue State
+  // Read once on mount, before anything can overwrite it
+  const [initialPlayerState] = useState(loadSavedPlayerState);
   const [queue, setQueue] = useState<Song[]>([]);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(() => {
-    try {
-      const saved = localStorage.getItem(PLAYER_STATE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed.volume === 'number') return parsed.volume;
-      }
-    } catch {
-      // ignore
-    }
-    return 0.85;
-  });
-  const [isShuffle, setIsShuffle] = useState(() => {
-    try {
-      const saved = localStorage.getItem(PLAYER_STATE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed.isShuffle === 'boolean') return parsed.isShuffle;
-      }
-    } catch {
-      // ignore
-    }
-    return false;
-  });
-  const [repeatMode, setRepeatMode] = useState<RepeatMode>(() => {
-    try {
-      const saved = localStorage.getItem(PLAYER_STATE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed.repeatMode) return parsed.repeatMode;
-      }
-    } catch {
-      // ignore
-    }
-    return 'off';
-  });
-
-  // Track if initial state was restored
-  const stateRestoredRef = useRef(false);
+  const [volume, setVolume] = useState<number>(() =>
+    typeof initialPlayerState?.volume === 'number' ? initialPlayerState.volume : 0.85
+  );
+  const [isShuffle, setIsShuffle] = useState<boolean>(() =>
+    typeof initialPlayerState?.isShuffle === 'boolean' ? initialPlayerState.isShuffle : false
+  );
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>(
+    () => initialPlayerState?.repeatMode || 'off'
+  );
 
   // Hidden File Input Ref for MediaStore file selection
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
+
+  // Player state is only persisted after the library has loaded and the saved state was restored
+  const libraryReadyRef = useRef(false);
+  // Saved playback position, applied once the restored track's metadata is loaded
+  const pendingSeekRef = useRef<{ queueInstanceId?: string; time: number } | null>(null);
+  // Queue order before shuffle was turned on, used to restore it when shuffle is turned off
+  const originalOrderRef = useRef<string[] | null>(null);
+  const messageTimerRef = useRef<number | undefined>(undefined);
+
+  // Latest state & handlers for long-lived listeners (audio element, Media Session),
+  // which are registered once and would otherwise see stale values
+  const latestRef = useRef({
+    queue,
+    currentSong,
+    isShuffle,
+    repeatMode,
+    volume,
+    onTrackEnded: () => {},
+    skipNext: () => {},
+    skipPrevious: () => {},
+  });
+
+  // Transient notification banner (each new message replaces the previous one)
+  const showMessage = (message: string, durationMs: number | null = 2500) => {
+    window.clearTimeout(messageTimerRef.current);
+    setScanMessage(message);
+    if (durationMs !== null) {
+      messageTimerRef.current = window.setTimeout(() => setScanMessage(null), durationMs);
+    }
+  };
+
+  const persistPlayerState = () => {
+    if (!libraryReadyRef.current) return;
+    const { queue, currentSong, isShuffle, repeatMode, volume } = latestRef.current;
+    try {
+      const stateToSave: SavedPlayerState = {
+        currentSongId: currentSong?.id || null,
+        currentQueueIndex: findQueueIndex(queue, currentSong),
+        currentTime: pendingSeekRef.current?.time ?? audioElementRef.current?.currentTime ?? 0,
+        queueIds: queue.map((s) => s.id),
+        isShuffle,
+        repeatMode,
+        volume,
+      };
+      localStorage.setItem(PLAYER_STATE_KEY, JSON.stringify(stateToSave));
+    } catch (err) {
+      console.warn('LocalStorage player state save error', err);
+    }
+  };
 
   // Sync playlists to local persistence (Room Database simulation)
   useEffect(() => {
@@ -164,100 +209,76 @@ export default function App() {
     }
   }, [favoriteIds]);
 
-  // Persist Player State across sessions
+  // Persist Player State across sessions. Playback position is saved on pause / when the
+  // page is hidden instead of on every timeupdate.
   useEffect(() => {
-    try {
-      const stateToSave: SavedPlayerState = {
-        currentSongId: currentSong?.id || null,
-        currentTime,
-        queueIds: queue.map((s) => s.id),
-        isShuffle,
-        repeatMode,
-        volume,
-      };
-      localStorage.setItem(PLAYER_STATE_KEY, JSON.stringify(stateToSave));
-    } catch (err) {
-      console.warn('LocalStorage player state save error', err);
-    }
-  }, [currentSong?.id, currentTime, queue, isShuffle, repeatMode, volume]);
+    persistPlayerState();
+  }, [currentSong, queue, isShuffle, repeatMode, volume]);
 
-  // Load initial local audio files on mount
+  // Load local audio files on mount (demo tracks + user imports stored in IndexedDB)
+  // and restore the saved queue / current track / position
   useEffect(() => {
     let mounted = true;
     async function loadInitialSongs() {
       setIsScanning(true);
-      const initial = await getInitialLocalAudioFiles();
+      const [sampleTracks, userTracks] = await Promise.all([
+        getInitialLocalAudioFiles(),
+        loadUserTracks().catch((err) => {
+          console.warn('Failed to load imported tracks', err);
+          return [] as Song[];
+        }),
+      ]);
       if (!mounted) return;
 
       // Apply saved favorite tags
-      const withFavs = initial.map((s) => ({
+      const library = [...userTracks, ...sampleTracks].map((s) => ({
         ...s,
         isFavorite: favoriteIds.includes(s.id),
       }));
 
-      setSongs(withFavs);
+      setSongs(library);
       setIsScanning(false);
 
-      // Restore saved player state if available
-      try {
-        const savedStateStr = localStorage.getItem(PLAYER_STATE_KEY);
-        if (savedStateStr && !stateRestoredRef.current) {
-          stateRestoredRef.current = true;
-          const parsed: SavedPlayerState = JSON.parse(savedStateStr);
+      // Restore queue
+      const songsById = new Map<string, Song>(library.map((s) => [s.id, s]));
+      let restoredQueue = (initialPlayerState?.queueIds ?? [])
+        .map((id) => songsById.get(id))
+        .filter((s): s is Song => !!s)
+        .map(createQueueItem);
+      if (restoredQueue.length === 0) {
+        restoredQueue = library.map(createQueueItem);
+      }
+      setQueue(restoredQueue);
 
-          // Restore queue
-          if (parsed.queueIds && parsed.queueIds.length > 0) {
-            const restoredQueue: Song[] = [];
-            parsed.queueIds.forEach((id) => {
-              const matched = withFavs.find((s) => s.id === id);
-              if (matched) restoredQueue.push(matched);
-            });
-            if (restoredQueue.length > 0) {
-              setQueue(restoredQueue);
-            } else {
-              setQueue(withFavs);
-            }
-          } else {
-            setQueue(withFavs);
-          }
-
-          // Restore current song and playback position
-          if (parsed.currentSongId) {
-            const matchedSong = withFavs.find((s) => s.id === parsed.currentSongId);
-            if (matchedSong) {
-              setCurrentSong(matchedSong);
-              if (parsed.currentTime > 0) {
-                setCurrentTime(parsed.currentTime);
-              }
-            } else if (withFavs.length > 0) {
-              setCurrentSong(withFavs[0]);
-            }
-          } else if (withFavs.length > 0) {
-            setCurrentSong(withFavs[0]);
-          }
-        } else {
-          setQueue(withFavs);
-          if (withFavs.length > 0 && !currentSong) {
-            setCurrentSong(withFavs[0]);
-          }
-        }
-      } catch (err) {
-        console.warn('Error restoring player state', err);
-        setQueue(withFavs);
-        if (withFavs.length > 0 && !currentSong) {
-          setCurrentSong(withFavs[0]);
+      // Restore current song and playback position
+      let restoredSong: Song | undefined;
+      const savedSongId = initialPlayerState?.currentSongId;
+      if (savedSongId) {
+        const savedIndex = initialPlayerState?.currentQueueIndex;
+        restoredSong =
+          savedIndex !== undefined && restoredQueue[savedIndex]?.id === savedSongId
+            ? restoredQueue[savedIndex]
+            : restoredQueue.find((s) => s.id === savedSongId);
+        const savedTime = initialPlayerState?.currentTime ?? 0;
+        if (restoredSong && savedTime > 0) {
+          pendingSeekRef.current = { queueInstanceId: restoredSong.queueInstanceId, time: savedTime };
+          setCurrentTime(savedTime);
         }
       }
+      setCurrentSong(restoredSong ?? restoredQueue[0] ?? null);
 
-      // Pre-populate demo playlists with first few tracks if they were empty
-      setPlaylists((prev) => {
-        if (prev.length >= 1 && prev[0].songIds.length === 0 && withFavs.length >= 2) {
-          return [
-            { ...prev[0], songIds: [withFavs[0].id, withFavs[1].id] },
-          ];
-        }
-        return prev;
-      });
+      // Pre-populate the demo playlist on first run only
+      if (shouldSeedDemoPlaylist && sampleTracks.length >= 2) {
+        setPlaylists((prev) =>
+          prev.map((p) =>
+            p.id === DEMO_PLAYLIST_ID && p.songIds.length === 0
+              ? { ...p, songIds: [sampleTracks[0].id, sampleTracks[1].id] }
+              : p
+          )
+        );
+      }
+
+      libraryReadyRef.current = true;
     }
 
     loadInitialSongs();
@@ -270,7 +291,7 @@ export default function App() {
   useEffect(() => {
     const audio = new Audio();
     audio.preload = 'metadata';
-    audio.volume = volume;
+    audio.volume = latestRef.current.volume;
     audioElementRef.current = audio;
 
     const onTimeUpdate = () => {
@@ -283,39 +304,64 @@ export default function App() {
       }
     };
 
+    const onLoadedMetadata = () => {
+      const pending = pendingSeekRef.current;
+      if (!pending) return;
+      pendingSeekRef.current = null;
+      // Only apply the saved position to the track it belongs to
+      if (latestRef.current.currentSong?.queueInstanceId !== pending.queueInstanceId) return;
+      const target = isFinite(audio.duration) ? Math.min(pending.time, audio.duration) : pending.time;
+      audio.currentTime = target;
+      setCurrentTime(target);
+    };
+
     const onEnded = () => {
-      handleTrackEnded();
+      latestRef.current.onTrackEnded();
     };
 
     const onError = (e: Event) => {
+      // Ignore errors caused by clearing the source
+      if (!audio.getAttribute('src')) return;
       console.warn('Audio playback error / file unavailable', e);
       setIsPlaying(false);
 
       // Flag current song as unavailable
-      if (currentSong) {
-        setSongs((prev) =>
-          prev.map((s) => (s.id === currentSong.id ? { ...s, unavailable: true } : s))
-        );
-        setQueue((prev) =>
-          prev.map((s) => (s.id === currentSong.id ? { ...s, unavailable: true } : s))
-        );
+      const failedSong = latestRef.current.currentSong;
+      if (failedSong) {
+        const markUnavailable = (s: Song) =>
+          s.id === failedSong.id ? { ...s, unavailable: true } : s;
+        setSongs((prev) => prev.map(markUnavailable));
+        setQueue((prev) => prev.map(markUnavailable));
+        setCurrentSong((prev) => (prev ? markUnavailable(prev) : prev));
       }
 
-      setScanMessage('Música indisponível ou arquivo movido.');
-      setTimeout(() => setScanMessage(null), 4000);
+      showMessage('Música indisponível ou arquivo movido.', 4000);
+    };
+
+    const onPause = () => persistPlayerState();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') persistPlayerState();
     };
 
     audio.addEventListener('timeupdate', onTimeUpdate);
     audio.addEventListener('durationchange', onDurationChange);
+    audio.addEventListener('loadedmetadata', onLoadedMetadata);
     audio.addEventListener('ended', onEnded);
     audio.addEventListener('error', onError);
+    audio.addEventListener('pause', onPause);
+    window.addEventListener('pagehide', persistPlayerState);
+    document.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       audio.pause();
       audio.removeEventListener('timeupdate', onTimeUpdate);
       audio.removeEventListener('durationchange', onDurationChange);
+      audio.removeEventListener('loadedmetadata', onLoadedMetadata);
       audio.removeEventListener('ended', onEnded);
       audio.removeEventListener('error', onError);
+      audio.removeEventListener('pause', onPause);
+      window.removeEventListener('pagehide', persistPlayerState);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, []);
 
@@ -324,7 +370,15 @@ export default function App() {
     const audio = audioElementRef.current;
     if (!audio) return;
 
-    if (currentSong && audio.src !== currentSong.url) {
+    if (!currentSong) {
+      // Nothing left to play (e.g. last queue item removed)
+      audio.pause();
+      audio.removeAttribute('src');
+      audio.load();
+      return;
+    }
+
+    if (audio.src !== currentSong.url) {
       audio.src = currentSong.url;
       audio.load();
       if (isPlaying) {
@@ -333,15 +387,13 @@ export default function App() {
           setIsPlaying(false);
         });
       }
-    } else if (currentSong) {
-      if (isPlaying) {
-        audio.play().catch((err) => {
-          console.warn('Playback resume error', err);
-          setIsPlaying(false);
-        });
-      } else {
-        audio.pause();
-      }
+    } else if (isPlaying) {
+      audio.play().catch((err) => {
+        console.warn('Playback resume error', err);
+        setIsPlaying(false);
+      });
+    } else {
+      audio.pause();
     }
   }, [currentSong, isPlaying]);
 
@@ -353,166 +405,183 @@ export default function App() {
   }, [volume]);
 
   // Android MediaSessionService API integration (Background playback & notification controls)
+  // Handlers are registered once and always call the latest playback functions.
   useEffect(() => {
-    if ('mediaSession' in navigator && currentSong) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: currentSong.title,
-        artist: currentSong.artist,
-        album: currentSong.album || 'Minimalist Local Music Player',
-        artwork: currentSong.artworkUrl
-          ? [
-              {
-                src: currentSong.artworkUrl,
-                sizes: '300x300',
-                type: 'image/svg+xml',
-              },
-            ]
-          : [
-              {
-                src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="%23006A67" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
-                sizes: '512x512',
-                type: 'image/svg+xml',
-              },
-            ],
-      });
+    if (!('mediaSession' in navigator)) return;
 
-      navigator.mediaSession.setActionHandler('play', () => {
-        setIsPlaying(true);
-      });
-      navigator.mediaSession.setActionHandler('pause', () => {
-        setIsPlaying(false);
-      });
-      navigator.mediaSession.setActionHandler('previoustrack', () => {
-        skipPrevious();
-      });
-      navigator.mediaSession.setActionHandler('nexttrack', () => {
-        skipNext();
-      });
-      navigator.mediaSession.setActionHandler('seekto', (details) => {
-        if (details.seekTime !== undefined && audioElementRef.current) {
-          audioElementRef.current.currentTime = details.seekTime;
-          setCurrentTime(details.seekTime);
-        }
-      });
-      navigator.mediaSession.setActionHandler('seekforward', (details) => {
-        const offset = details.seekOffset || 10;
-        if (audioElementRef.current) {
-          audioElementRef.current.currentTime = Math.min(
-            duration,
-            audioElementRef.current.currentTime + offset
-          );
-        }
-      });
-      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
-        const offset = details.seekOffset || 10;
-        if (audioElementRef.current) {
-          audioElementRef.current.currentTime = Math.max(
-            0,
-            audioElementRef.current.currentTime - offset
-          );
-        }
-      });
-      navigator.mediaSession.setActionHandler('stop', () => {
-        setIsPlaying(false);
-      });
+    const setHandler = (action: MediaSessionAction, handler: MediaSessionActionHandler) => {
+      try {
+        navigator.mediaSession.setActionHandler(action, handler);
+      } catch {
+        // Action not supported by this browser
+      }
+    };
+
+    setHandler('play', () => setIsPlaying(true));
+    setHandler('pause', () => setIsPlaying(false));
+    setHandler('stop', () => setIsPlaying(false));
+    setHandler('previoustrack', () => latestRef.current.skipPrevious());
+    setHandler('nexttrack', () => latestRef.current.skipNext());
+    setHandler('seekto', (details) => {
+      const audio = audioElementRef.current;
+      if (details.seekTime !== undefined && audio) {
+        audio.currentTime = details.seekTime;
+        setCurrentTime(details.seekTime);
+      }
+    });
+    setHandler('seekforward', (details) => {
+      const audio = audioElementRef.current;
+      if (!audio) return;
+      const offset = details.seekOffset || 10;
+      const maxTime = isFinite(audio.duration) ? audio.duration : audio.currentTime + offset;
+      audio.currentTime = Math.min(maxTime, audio.currentTime + offset);
+    });
+    setHandler('seekbackward', (details) => {
+      const audio = audioElementRef.current;
+      if (!audio) return;
+      const offset = details.seekOffset || 10;
+      audio.currentTime = Math.max(0, audio.currentTime - offset);
+    });
+  }, []);
+
+  // Media Session metadata (notification / lock screen)
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !currentSong) return;
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: currentSong.title,
+      artist: currentSong.artist,
+      album: currentSong.album || 'Minimalist Local Music Player',
+      artwork: currentSong.artworkUrl
+        ? [
+            {
+              src: currentSong.artworkUrl,
+              sizes: '300x300',
+              type: 'image/svg+xml',
+            },
+          ]
+        : [
+            {
+              src: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="none" stroke="%23006A67" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+              sizes: '512x512',
+              type: 'image/svg+xml',
+            },
+          ],
+    });
+  }, [currentSong]);
+
+  const seekToStart = () => {
+    pendingSeekRef.current = null;
+    if (audioElementRef.current) {
+      audioElementRef.current.currentTime = 0;
     }
-  }, [currentSong, duration]);
+    setCurrentTime(0);
+  };
 
   // Track Ended Handler
-  const handleTrackEnded = useCallback(() => {
-    if (repeatMode === 'one' && audioElementRef.current) {
-      audioElementRef.current.currentTime = 0;
-      audioElementRef.current.play();
+  const handleTrackEnded = () => {
+    if (repeatMode === 'one') {
+      seekToStart();
+      audioElementRef.current?.play().catch(() => setIsPlaying(false));
       setIsPlaying(true);
       return;
     }
 
     // Skip to next in queue
     skipNext();
-  }, [repeatMode, queue, currentSong, isShuffle]);
+  };
 
-  // Helper to ensure each queue item has a stable unique instance key for drag & drop
-  const createQueueItem = (song: Song): Song => ({
-    ...song,
-    queueInstanceId:
-      song.queueInstanceId ||
-      `${song.id}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-  });
+  // Moves playback to a queue entry; replaying the same entry restarts it
+  const goToQueueItem = (song: Song) => {
+    if (isSameQueueItem(song, currentSong)) {
+      seekToStart();
+      if (isPlaying) {
+        audioElementRef.current?.play().catch(() => setIsPlaying(false));
+      }
+      return;
+    }
+    setCurrentSong(song);
+  };
 
   // Play Song immediately
   const playSong = (song: Song) => {
-    const item = createQueueItem(song);
-    setCurrentSong(item);
-    setIsPlaying(true);
-    // Ensure current song is in queue
-    if (!queue.some((s) => s.id === song.id)) {
-      setQueue((prev) => [item, ...prev]);
+    const queuedIndex = findQueueIndex(queue, song);
+    if (queuedIndex !== -1) {
+      setCurrentSong(queue[queuedIndex]);
+    } else {
+      // Insert right after the current song so the rest of the queue continues afterwards
+      const item = createQueueItem(song);
+      const currentIndex = findQueueIndex(queue, currentSong);
+      const updated = [...queue];
+      updated.splice(currentIndex + 1, 0, item);
+      setQueue(updated);
+      setCurrentSong(item);
     }
+    setIsPlaying(true);
   };
 
   // Play a full custom queue (e.g. from playlist or artist/album Play All)
   const playQueue = (songsToPlay: Song[]) => {
     if (songsToPlay.length === 0) return;
-    const items = songsToPlay.map((s) => createQueueItem(s));
-    setQueue(items);
-    setCurrentSong(items[0]);
+    const items = songsToPlay.map(createQueueItem);
+    let ordered = items;
+    if (isShuffle) {
+      originalOrderRef.current = items.map((s) => s.queueInstanceId!);
+      ordered = shuffleArray(items);
+    }
+    setQueue(ordered);
+    setCurrentSong(ordered[0]);
     setIsPlaying(true);
   };
 
   // Queue Operations: Add to queue
   const handleAddToQueue = (song: Song) => {
     const item = createQueueItem(song);
-    setQueue((prev) => {
-      // If queue is empty, set as current song too
-      if (prev.length === 0) {
-        setCurrentSong(item);
-        setIsPlaying(true);
-        return [item];
-      }
-      return [...prev, item];
-    });
-    setScanMessage(`"${song.title}" adicionada à fila`);
-    setTimeout(() => setScanMessage(null), 2500);
+    if (queue.length === 0) {
+      setQueue([item]);
+      setCurrentSong(item);
+      setIsPlaying(true);
+    } else {
+      setQueue([...queue, item]);
+    }
+    showMessage(`"${song.title}" adicionada à fila`);
   };
 
   // Queue Operations: Play next (insert immediately after current song)
   const handlePlayNext = (song: Song) => {
     const item = createQueueItem(song);
-    setQueue((prev) => {
-      if (prev.length === 0 || !currentSong) {
-        setCurrentSong(item);
-        setIsPlaying(true);
-        return [item];
-      }
-      const currentIndex = prev.findIndex((s) => s.id === currentSong.id);
+    if (!currentSong) {
+      setQueue([item, ...queue]);
+      setCurrentSong(item);
+      setIsPlaying(true);
+    } else {
+      const currentIndex = findQueueIndex(queue, currentSong);
       if (currentIndex === -1) {
-        return [currentSong, item, ...prev];
+        setQueue([currentSong, item, ...queue]);
+      } else {
+        const updated = [...queue];
+        updated.splice(currentIndex + 1, 0, item);
+        setQueue(updated);
       }
-      const updated = [...prev];
-      updated.splice(currentIndex + 1, 0, item);
-      return updated;
-    });
-    setScanMessage(`"${song.title}" tocará a seguir`);
-    setTimeout(() => setScanMessage(null), 2500);
+    }
+    showMessage(`"${song.title}" tocará a seguir`);
   };
 
   // Queue Operations: Remove from queue
   const handleRemoveFromQueue = (index: number) => {
-    setQueue((prev) => {
-      const updated = [...prev];
-      const removed = updated.splice(index, 1)[0];
-      // If removed song was current playing, skip to next or stop
-      if (removed?.id === currentSong?.id) {
-        if (updated.length > 0) {
-          const nextIndex = Math.min(index, updated.length - 1);
-          setCurrentSong(updated[nextIndex]);
-        } else {
-          setCurrentSong(null);
-          setIsPlaying(false);
-        }
+    const removed = queue[index];
+    if (!removed) return;
+    const updated = queue.filter((_, i) => i !== index);
+    setQueue(updated);
+
+    // If removed entry was the one playing, move to the next one or stop
+    if (isSameQueueItem(removed, currentSong)) {
+      if (updated.length > 0) {
+        setCurrentSong(updated[Math.min(index, updated.length - 1)]);
+      } else {
+        setCurrentSong(null);
+        setIsPlaying(false);
       }
-      return updated;
-    });
+    }
   };
 
   // Queue Operations: Move queue item
@@ -539,8 +608,7 @@ export default function App() {
     } else {
       setQueue([]);
     }
-    setScanMessage('Fila de reprodução limpa');
-    setTimeout(() => setScanMessage(null), 2000);
+    showMessage('Fila de reprodução limpa', 2000);
   };
 
   // Toggle Favorite
@@ -567,18 +635,28 @@ export default function App() {
       setCurrentSong((prev) => (prev ? { ...prev, isFavorite: isNowFav } : prev));
     }
 
-    setScanMessage(
+    showMessage(
       isNowFav
         ? `"${song.title}" adicionada aos Favoritos`
         : `"${song.title}" removida dos Favoritos`
     );
-    setTimeout(() => setScanMessage(null), 2500);
   };
 
   // Remove song completely from library (handles moved/deleted tracks)
   const handleRemoveFromLibrary = (songId: string) => {
+    const updatedQueue = queue.filter((s) => s.id !== songId);
+
+    if (currentSong?.id === songId) {
+      // Continue with the next surviving entry after the removed one
+      const currentIndex = findQueueIndex(queue, currentSong);
+      const nextSong =
+        queue.slice(currentIndex + 1).find((s) => s.id !== songId) ?? updatedQueue[0] ?? null;
+      setCurrentSong(nextSong);
+      if (!nextSong) setIsPlaying(false);
+    }
+
     setSongs((prev) => prev.filter((s) => s.id !== songId));
-    setQueue((prev) => prev.filter((s) => s.id !== songId));
+    setQueue(updatedQueue);
     setFavoriteIds((prev) => prev.filter((id) => id !== songId));
 
     // Remove from all playlists
@@ -589,12 +667,10 @@ export default function App() {
       }))
     );
 
-    if (currentSong?.id === songId) {
-      skipNext();
-    }
+    // Imported files also live in IndexedDB
+    deleteUserTrack(songId).catch((err) => console.warn('Failed to delete stored track', err));
 
-    setScanMessage('Música removida da biblioteca local');
-    setTimeout(() => setScanMessage(null), 2500);
+    showMessage('Música removida da biblioteca local');
   };
 
   // Skip Next
@@ -602,20 +678,13 @@ export default function App() {
     const currentList = queue.length > 0 ? queue : songs;
     if (currentList.length === 0) return;
 
-    if (isShuffle) {
-      const randomIndex = Math.floor(Math.random() * currentList.length);
-      setCurrentSong(currentList[randomIndex]);
-      setIsPlaying(true);
-      return;
-    }
-
-    const currentIndex = currentList.findIndex((s) => s.id === currentSong?.id);
+    const currentIndex = findQueueIndex(currentList, currentSong);
     if (currentIndex === -1) {
       setCurrentSong(currentList[0]);
     } else if (currentIndex < currentList.length - 1) {
       setCurrentSong(currentList[currentIndex + 1]);
     } else if (repeatMode === 'all') {
-      setCurrentSong(currentList[0]);
+      goToQueueItem(currentList[0]);
     } else {
       setIsPlaying(false);
     }
@@ -625,19 +694,20 @@ export default function App() {
   const skipPrevious = () => {
     // If more than 3 seconds in, restart track
     if (audioElementRef.current && audioElementRef.current.currentTime > 3) {
-      audioElementRef.current.currentTime = 0;
-      setCurrentTime(0);
+      seekToStart();
       return;
     }
 
     const currentList = queue.length > 0 ? queue : songs;
     if (currentList.length === 0) return;
 
-    const currentIndex = currentList.findIndex((s) => s.id === currentSong?.id);
+    const currentIndex = findQueueIndex(currentList, currentSong);
     if (currentIndex > 0) {
       setCurrentSong(currentList[currentIndex - 1]);
+    } else if (repeatMode === 'all') {
+      goToQueueItem(currentList[currentList.length - 1]);
     } else {
-      setCurrentSong(currentList[currentList.length - 1]);
+      seekToStart();
     }
   };
 
@@ -654,10 +724,35 @@ export default function App() {
 
   // Seek
   const handleSeek = (time: number) => {
+    pendingSeekRef.current = null;
     if (audioElementRef.current) {
       audioElementRef.current.currentTime = time;
       setCurrentTime(time);
     }
+  };
+
+  // Shuffle reorders the queue itself (current song first, the rest shuffled), so the
+  // queue view shows the real play order and Previous/Next stay predictable.
+  // Turning it off restores the original order.
+  const toggleShuffle = () => {
+    if (!isShuffle) {
+      originalOrderRef.current = queue.map((s) => s.queueInstanceId ?? s.id);
+      const currentIndex = findQueueIndex(queue, currentSong);
+      if (currentIndex === -1) {
+        setQueue(shuffleArray(queue));
+      } else {
+        const rest = queue.filter((_, i) => i !== currentIndex);
+        setQueue([queue[currentIndex], ...shuffleArray(rest)]);
+      }
+    } else if (originalOrderRef.current) {
+      const order = new Map<string, number>(originalOrderRef.current.map((key, i) => [key, i]));
+      const position = (s: Song) =>
+        order.get(s.queueInstanceId ?? s.id) ?? Number.MAX_SAFE_INTEGER;
+      // Stable sort: entries added while shuffled keep their relative order at the end
+      setQueue([...queue].sort((a, b) => position(a) - position(b)));
+      originalOrderRef.current = null;
+    }
+    setIsShuffle(!isShuffle);
   };
 
   // Cycle Repeat Mode
@@ -677,6 +772,25 @@ export default function App() {
     setThemeKey(nextKey);
   };
 
+  // Adds sample tracks that are not yet in the library; returns how many were added
+  const addSampleTracks = async (): Promise<number> => {
+    const scanned = await getInitialLocalAudioFiles();
+    const existingIds = new Set(songs.map((s) => s.id));
+    const fresh = scanned.filter((s) => !existingIds.has(s.id));
+    // Release audio generated for tracks we already have
+    scanned
+      .filter((s) => existingIds.has(s.id))
+      .forEach((s) => s.url && URL.revokeObjectURL(s.url));
+
+    if (fresh.length > 0) {
+      setSongs((prev) => [
+        ...prev,
+        ...fresh.map((s) => ({ ...s, isFavorite: favoriteIds.includes(s.id) })),
+      ]);
+    }
+    return fresh.length;
+  };
+
   // Device MediaStore Rescan Simulation
   const handleRescan = async () => {
     if (!permissionGranted) {
@@ -685,54 +799,45 @@ export default function App() {
     }
 
     setIsScanning(true);
-    setScanMessage('Reindexando MediaStore e buscando novos arquivos de áudio...');
+    showMessage('Reindexando MediaStore e buscando novos arquivos de áudio...', null);
 
     try {
-      // Simulate real background MediaStore scan query
-      const scanned = await getInitialLocalAudioFiles();
-
-      setSongs((prevExisting) => {
-        const existingMap = new Map<string, Song>();
-        prevExisting.forEach((s) => existingMap.set(s.id, s));
-
-        // Preserve favorites
-        scanned.forEach((s) => {
-          if (!existingMap.has(s.id)) {
-            existingMap.set(s.id, {
-              ...s,
-              isFavorite: favoriteIds.includes(s.id),
-            });
-          }
-        });
-
-        return Array.from(existingMap.values());
-      });
-
-      setScanMessage('Biblioteca atualizada com sucesso!');
+      const added = await addSampleTracks();
+      showMessage(
+        added > 0
+          ? `Biblioteca atualizada: ${added} nova(s) música(s)`
+          : 'Biblioteca atualizada com sucesso!',
+        3000
+      );
     } catch (err) {
       console.warn('Rescan error', err);
-      setScanMessage('Falha ao reindexar o MediaStore.');
+      showMessage('Falha ao reindexar o MediaStore.', 3000);
     } finally {
       setIsScanning(false);
-      setTimeout(() => setScanMessage(null), 3000);
     }
   };
 
-  // Local File Scanner (Real .mp3 and .wav file upload)
-  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  // Local File Scanner (real audio file import, persisted in IndexedDB)
+  const handleFilesSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const input = e.target;
+    const files: File[] = input.files ? Array.from(input.files) : [];
+    // Reset input so the same file can be picked again
+    input.value = '';
+    if (files.length === 0) return;
 
-    const newSongs: Song[] = [];
-    Array.from(files).forEach((file: File) => {
-      const isMp3 = file.name.endsWith('.mp3') || file.type === 'audio/mpeg';
-      const isWav = file.name.endsWith('.wav') || file.type === 'audio/wav' || file.type === 'audio/x-wav';
+    const existingIds = new Set(songs.map((s) => s.id));
+    const imported: Song[] = [];
+    let saveFailed = false;
+
+    for (const file of files) {
+      // Stable id: re-importing the same file doesn't create a duplicate
+      const songId = `user_audio_${hashString(`${file.name}|${file.size}|${file.lastModified}`)}`;
+      if (existingIds.has(songId)) continue;
+      existingIds.add(songId);
 
       const metadata = resolveSongMetadata(undefined, undefined, undefined, file.name);
-      const artworkUrl = generateAlbumArtwork(metadata.title, metadata.artist, metadata.album);
-
       const blobUrl = URL.createObjectURL(file);
-      const songId = `user_audio_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+      const probedDuration = await probeDuration(blobUrl);
 
       const song: Song = {
         id: songId,
@@ -740,51 +845,50 @@ export default function App() {
         artist: metadata.artist,
         album: metadata.album,
         folder: '/Download/Audio',
-        artworkUrl,
-        duration: 180, // Updated when loaded
+        artworkUrl: generateAlbumArtwork(metadata.title, metadata.artist, metadata.album),
+        duration: probedDuration || 180,
         url: blobUrl,
         fileName: file.name,
-        format: isWav ? 'wav' : isMp3 ? 'mp3' : 'mp3',
+        format: detectAudioFormat(file.name),
         size: file.size,
         dateAdded: Date.now(),
-        isFavorite: false,
+        isFavorite: favoriteIds.includes(songId),
       };
 
-      // Probe actual duration
-      const probeAudio = new Audio();
-      probeAudio.src = blobUrl;
-      probeAudio.onloadedmetadata = () => {
-        if (!isNaN(probeAudio.duration) && probeAudio.duration > 0) {
-          setSongs((prevSongs) =>
-            prevSongs.map((s) =>
-              s.id === songId ? { ...s, duration: Math.round(probeAudio.duration) } : s
-            )
-          );
-        }
-      };
+      try {
+        await saveUserTrack(song, file);
+      } catch (err) {
+        console.warn('Failed to persist imported track', err);
+        saveFailed = true;
+      }
 
-      newSongs.push(song);
-    });
+      imported.push(song);
+    }
 
-    setSongs((prev) => [...newSongs, ...prev]);
-    setScanMessage(`Importado(s) ${newSongs.length} arquivo(s) de áudio local`);
-    setTimeout(() => setScanMessage(null), 3000);
+    if (imported.length === 0) {
+      showMessage('Essas músicas já estão na biblioteca');
+      return;
+    }
 
-    // Reset input
-    if (e.target) e.target.value = '';
+    setSongs((prev) => [...imported, ...prev]);
+    showMessage(
+      saveFailed
+        ? `Importado(s) ${imported.length} arquivo(s), mas alguns não puderam ser salvos permanentemente`
+        : `Importado(s) ${imported.length} arquivo(s) de áudio local`,
+      3000
+    );
   };
 
   // Playlist Management
-  const handleCreatePlaylist = (name: string) => {
+  const handleCreatePlaylist = (name: string, initialSongIds: string[] = []) => {
     const newPlaylist: Playlist = {
       id: `pl_${Date.now()}`,
       name,
       createdAt: Date.now(),
-      songIds: [],
+      songIds: initialSongIds,
     };
     setPlaylists((prev) => [newPlaylist, ...prev]);
-    setScanMessage(`Playlist "${name}" criada com sucesso`);
-    setTimeout(() => setScanMessage(null), 2500);
+    showMessage(`Playlist "${name}" criada com sucesso`);
   };
 
   const handleRenamePlaylist = (id: string, newName: string) => {
@@ -854,6 +958,17 @@ export default function App() {
     setIsSongActionMenuOpen(true);
   };
 
+  latestRef.current = {
+    queue,
+    currentSong,
+    isShuffle,
+    repeatMode,
+    volume,
+    onTrackEnded: handleTrackEnded,
+    skipNext,
+    skipPrevious,
+  };
+
   return (
     <div
       id="app-root"
@@ -916,8 +1031,8 @@ export default function App() {
             onOpenSongMenu={handleOpenSongMenu}
             onToggleFavorite={handleToggleFavorite}
             onLoadSamples={async () => {
-              const fresh = await getInitialLocalAudioFiles();
-              setSongs(fresh);
+              const added = await addSampleTracks();
+              if (added > 0) showMessage(`${added} música(s) de exemplo carregada(s)`);
             }}
           />
         ) : (
@@ -985,17 +1100,11 @@ export default function App() {
         onTogglePlay={togglePlay}
         onSkipNext={skipNext}
         onSkipPrevious={skipPrevious}
-        onToggleShuffle={() => setIsShuffle((prev) => !prev)}
+        onToggleShuffle={toggleShuffle}
         onCycleRepeat={cycleRepeat}
         onSeek={handleSeek}
         onVolumeChange={setVolume}
-        onOpenAddToPlaylist={(song) => {
-          if (playlists.length > 0) {
-            handleOpenAddSongsModal(playlists[0]);
-          } else {
-            handleCreatePlaylist('Minha Playlist');
-          }
-        }}
+        onOpenAddToPlaylist={setPlaylistPickerSong}
         onOpenQueue={() => setIsQueueModalOpen(true)}
         onToggleFavorite={handleToggleFavorite}
       />
@@ -1027,13 +1136,7 @@ export default function App() {
         onPlayNow={playSong}
         onPlayNext={handlePlayNext}
         onAddToQueue={handleAddToQueue}
-        onAddToPlaylist={(song) => {
-          if (playlists.length > 0) {
-            handleOpenAddSongsModal(playlists[0]);
-          } else {
-            handleCreatePlaylist('Minha Playlist');
-          }
-        }}
+        onAddToPlaylist={setPlaylistPickerSong}
         onToggleFavorite={handleToggleFavorite}
         onRemoveFromLibrary={handleRemoveFromLibrary}
       />
@@ -1049,6 +1152,16 @@ export default function App() {
         allSongs={songs}
         currentTheme={currentTheme}
         onToggleSongInPlaylist={handleToggleSongInPlaylist}
+      />
+
+      {/* Choose which playlist(s) a song belongs to */}
+      <PlaylistPickerModal
+        song={playlistPickerSong}
+        playlists={playlists}
+        currentTheme={currentTheme}
+        onClose={() => setPlaylistPickerSong(null)}
+        onToggleSongInPlaylist={handleToggleSongInPlaylist}
+        onCreatePlaylist={handleCreatePlaylist}
       />
 
       {/* Android Permissions Modal */}

@@ -1,6 +1,6 @@
 # Simple Music Player
 
-Player de MP3 para Android, simples e bem feito: toca as músicas salvas no aparelho, sem anúncios
+Player de MP3 para Android, simples e direot ao ponto: Reproduz as músicas salvas no aparelho, sem anúncios
 e sem acesso à internet.
 
 ## Funcionalidades

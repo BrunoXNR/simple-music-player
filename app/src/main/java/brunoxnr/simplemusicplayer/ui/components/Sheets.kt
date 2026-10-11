@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.QueuePlayNext
 import androidx.compose.material.icons.rounded.RemoveCircleOutline
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -183,7 +184,17 @@ fun PlaylistPickerSheet(
                 }
             }
 
-            SheetAction(Icons.Rounded.Add, stringResource(R.string.action_new_playlist), { showCreateDialog = true })
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = { showCreateDialog = true }) {
+                    Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.action_new_playlist), modifier = Modifier.padding(start = 6.dp))
+                }
+                Spacer(Modifier.weight(1f))
+                Button(onClick = onDismiss) { Text(stringResource(R.string.action_done)) }
+            }
         }
     }
 

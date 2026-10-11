@@ -1,5 +1,6 @@
 package brunoxnr.simplemusicplayer.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -55,6 +56,7 @@ import brunoxnr.simplemusicplayer.data.Song
 import brunoxnr.simplemusicplayer.data.search
 import brunoxnr.simplemusicplayer.data.sortedBy
 import brunoxnr.simplemusicplayer.data.SongSort
+import brunoxnr.simplemusicplayer.ui.components.ConfirmDialog
 import brunoxnr.simplemusicplayer.ui.components.SongArtwork
 import brunoxnr.simplemusicplayer.ui.components.SongRow
 import brunoxnr.simplemusicplayer.ui.components.formatDuration
@@ -184,19 +186,38 @@ fun SongCollectionScreen(
     }
 }
 
-/** Pick songs for a playlist; each tap adds/removes immediately */
+/**
+ * Pick songs for a playlist. Checks are kept locally and only saved when the user confirms;
+ * leaving with unsaved changes asks before discarding them.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddSongsScreen(
     playlistName: String,
     allSongs: List<Song>,
-    selectedIds: Set<Long>,
-    onSetIncluded: (songId: Long, included: Boolean) -> Unit,
-    onBack: () -> Unit,
+    currentSongIds: List<Long>,
+    onSave: (songIds: List<Long>) -> Unit,
+    onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var query by rememberSaveable { mutableStateOf("") }
+    // Playlist order is kept; newly checked songs are appended in the order they were checked
+    var selection by rememberSaveable { mutableStateOf(currentSongIds.toLongArray()) }
+    var confirmDiscard by remember { mutableStateOf(false) }
     val visibleSongs = remember(allSongs, query) { allSongs.search(query).sortedBy(SongSort.TITLE, true) }
+
+    val selectedSet = remember(selection) { selection.toSet() }
+    val initialSet = remember(currentSongIds) { currentSongIds.toSet() }
+    val addedCount = selection.count { it !in initialSet }
+    val removedCount = currentSongIds.count { it !in selectedSet }
+    val hasChanges = addedCount > 0 || removedCount > 0
+
+    fun toggle(songId: Long) {
+        selection = if (songId in selectedSet) selection.filter { it != songId }.toLongArray() else selection + songId
+    }
+    val leave = { if (hasChanges) confirmDiscard = true else onCancel() }
+
+    BackHandler(enabled = hasChanges) { confirmDiscard = true }
 
     Column(modifier.fillMaxSize()) {
         TopAppBar(
@@ -213,8 +234,8 @@ fun AddSongsScreen(
                 }
             },
             navigationIcon = {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.action_done))
+                IconButton(onClick = leave) {
+                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.action_back))
                 }
             },
             windowInsets = WindowInsets(0),
@@ -237,13 +258,13 @@ fun AddSongsScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         )
 
-        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(vertical = 8.dp)) {
+        LazyColumn(Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
             items(visibleSongs, key = { it.id }) { song ->
-                val included = song.id in selectedIds
+                val included = song.id in selectedSet
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSetIncluded(song.id, !included) }
+                        .clickable { toggle(song.id) }
                         .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -258,9 +279,39 @@ fun AddSongsScreen(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Checkbox(checked = included, onCheckedChange = { onSetIncluded(song.id, it) })
+                    Checkbox(checked = included, onCheckedChange = { toggle(song.id) })
                 }
             }
         }
+
+        // Confirm bar
+        Surface(tonalElevation = 3.dp) {
+            Button(
+                onClick = { if (hasChanges) onSave(selection.toList()) else onCancel() },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+            ) {
+                Text(
+                    when {
+                        addedCount > 0 && removedCount == 0 ->
+                            pluralStringResource(R.plurals.action_add_n_songs, addedCount, addedCount)
+                        hasChanges -> stringResource(R.string.action_save_changes)
+                        else -> stringResource(R.string.action_done)
+                    }
+                )
+            }
+        }
+    }
+
+    if (confirmDiscard) {
+        ConfirmDialog(
+            title = stringResource(R.string.discard_changes_title),
+            text = stringResource(R.string.discard_changes_message),
+            confirmLabel = stringResource(R.string.action_discard),
+            onConfirm = {
+                confirmDiscard = false
+                onCancel()
+            },
+            onDismiss = { confirmDiscard = false },
+        )
     }
 }

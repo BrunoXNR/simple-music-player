@@ -92,6 +92,26 @@
     <string name="playlist_name">Nome da playlist</string>
     <string name="add_to_playlist_title">Adicionar à playlist</string>
     <string name="add_songs_title">Adicionar músicas</string>
+    <string name="action_save_changes">Salvar alterações</string>
+    <plurals name="action_add_n_songs">
+        <item quantity="one">Adicionar %d música</item>
+        <item quantity="many">Adicionar %d músicas</item>
+        <item quantity="other">Adicionar %d músicas</item>
+    </plurals>
+    <string name="action_discard">Descartar</string>
+    <string name="discard_changes_title">Descartar alterações?</string>
+    <string name="discard_changes_message">As músicas marcadas ainda não foram salvas na playlist.</string>
+    <plurals name="message_songs_added">
+        <item quantity="one">%1$d música adicionada a “%2$s”</item>
+        <item quantity="many">%1$d músicas adicionadas a “%2$s”</item>
+        <item quantity="other">%1$d músicas adicionadas a “%2$s”</item>
+    </plurals>
+    <string name="message_playlist_updated">Playlist “%1$s” atualizada</string>
+    <string name="message_added_to_playlist">Adicionada a “%1$s”</string>
+    <string name="message_removed_from_playlist">Removida de “%1$s”</string>
+    <string name="action_share">Compartilhar</string>
+    <string name="share_chooser_title">Compartilhar lista de músicas</string>
+    <string name="share_footer">Compartilhado pelo Simple Music Player</string>
     <string name="delete_playlist_title">Excluir playlist?</string>
     <string name="delete_playlist_message">A playlist “%1$s” será excluída. Suas músicas continuam no aparelho.</string>
 

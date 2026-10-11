@@ -15,6 +15,7 @@ import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +56,7 @@ import brunoxnr.simplemusicplayer.ui.components.ConfirmDialog
 import brunoxnr.simplemusicplayer.ui.components.NameDialog
 import brunoxnr.simplemusicplayer.ui.components.PlaylistPickerSheet
 import brunoxnr.simplemusicplayer.ui.components.SongActionsSheet
+import brunoxnr.simplemusicplayer.ui.components.shareSongList
 import brunoxnr.simplemusicplayer.ui.screens.AddSongsScreen
 import brunoxnr.simplemusicplayer.ui.screens.MiniPlayer
 import brunoxnr.simplemusicplayer.ui.screens.NowPlayingScreen
@@ -105,6 +108,7 @@ fun MainScreen(vm: MusicViewModel) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
+    val context = LocalContext.current
     fun notify(message: String) {
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
@@ -185,18 +189,29 @@ fun MainScreen(vm: MusicViewModel) {
                     modifier = contentModifier,
                 )
 
-                route == ROUTE_FAVORITES -> SongCollectionScreen(
-                    title = stringResource(R.string.favorites),
-                    songs = songs.filter { it.id in favoriteIds }.sortedBy(SongSort.TITLE, true),
-                    currentSongId = playerState.currentSongId,
-                    isPlaying = playerState.isPlaying,
-                    onBack = { backStack.removeAt(backStack.lastIndex) },
-                    onPlay = play,
-                    onShuffle = player::shuffleAll,
-                    onMore = { openActions(it, null) },
-                    emptyMessage = stringResource(R.string.empty_favorites_message),
-                    modifier = contentModifier,
-                )
+                route == ROUTE_FAVORITES -> {
+                    val title = stringResource(R.string.favorites)
+                    val favoriteSongs = songs.filter { it.id in favoriteIds }.sortedBy(SongSort.TITLE, true)
+                    SongCollectionScreen(
+                        title = title,
+                        songs = favoriteSongs,
+                        currentSongId = playerState.currentSongId,
+                        isPlaying = playerState.isPlaying,
+                        onBack = { backStack.removeAt(backStack.lastIndex) },
+                        onPlay = play,
+                        onShuffle = player::shuffleAll,
+                        onMore = { openActions(it, null) },
+                        emptyMessage = stringResource(R.string.empty_favorites_message),
+                        modifier = contentModifier,
+                        actions = {
+                            if (favoriteSongs.isNotEmpty()) {
+                                IconButton(onClick = { context.shareSongList(title, favoriteSongs) }) {
+                                    Icon(Icons.Rounded.Share, contentDescription = stringResource(R.string.action_share))
+                                }
+                            }
+                        },
+                    )
+                }
 
                 route.startsWith(PREFIX_PLAYLIST) -> {
                     val playlistId = route.removePrefix(PREFIX_PLAYLIST).toLong()
@@ -205,9 +220,10 @@ fun MainScreen(vm: MusicViewModel) {
                         LaunchedEffect(route) { backStack.remove(route) }
                     } else {
                         var menuOpen by remember { mutableStateOf(false) }
+                        val playlistSongs = playlist.songIds.mapNotNull { songsById[it] }
                         SongCollectionScreen(
                             title = playlist.name,
-                            songs = playlist.songIds.mapNotNull { songsById[it] },
+                            songs = playlistSongs,
                             currentSongId = playerState.currentSongId,
                             isPlaying = playerState.isPlaying,
                             onBack = { backStack.removeAt(backStack.lastIndex) },
@@ -220,6 +236,11 @@ fun MainScreen(vm: MusicViewModel) {
                             actions = {
                                 IconButton(onClick = { backStack.add(PREFIX_ADD_SONGS + playlist.id) }) {
                                     Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.add_songs_title))
+                                }
+                                if (playlistSongs.isNotEmpty()) {
+                                    IconButton(onClick = { context.shareSongList(playlist.name, playlistSongs) }) {
+                                        Icon(Icons.Rounded.Share, contentDescription = stringResource(R.string.action_share))
+                                    }
                                 }
                                 IconButton(onClick = { menuOpen = true }) {
                                     Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.action_more_options))
@@ -281,9 +302,21 @@ fun MainScreen(vm: MusicViewModel) {
                         AddSongsScreen(
                             playlistName = playlist.name,
                             allSongs = songs,
-                            selectedIds = playlist.songIds.toSet(),
-                            onSetIncluded = { songId, included -> vm.setSongInPlaylist(playlist.id, songId, included) },
-                            onBack = { backStack.removeAt(backStack.lastIndex) },
+                            currentSongIds = playlist.songIds,
+                            onSave = { songIds ->
+                                val added = songIds.count { it !in playlist.songIds }
+                                val removed = playlist.songIds.count { it !in songIds }
+                                vm.reorderPlaylist(playlist.id, songIds)
+                                notify(
+                                    if (added > 0 && removed == 0) {
+                                        resources.getQuantityString(R.plurals.message_songs_added, added, added, playlist.name)
+                                    } else {
+                                        resources.getString(R.string.message_playlist_updated, playlist.name)
+                                    }
+                                )
+                                backStack.removeAt(backStack.lastIndex)
+                            },
+                            onCancel = { backStack.removeAt(backStack.lastIndex) },
                             modifier = contentModifier,
                         )
                     }
@@ -363,7 +396,16 @@ fun MainScreen(vm: MusicViewModel) {
             song = song,
             playlists = playlists,
             onDismiss = { pickerSong = null },
-            onSetIncluded = { playlistId, included -> vm.setSongInPlaylist(playlistId, song.id, included) },
+            onSetIncluded = { playlistId, included ->
+                vm.setSongInPlaylist(playlistId, song.id, included)
+                val name = playlists.find { it.id == playlistId }?.name.orEmpty()
+                notify(
+                    resources.getString(
+                        if (included) R.string.message_added_to_playlist else R.string.message_removed_from_playlist,
+                        name,
+                    )
+                )
+            },
             onCreatePlaylist = { name -> vm.createPlaylist(name, listOf(song.id)) },
         )
     }

@@ -9,6 +9,7 @@ import brunoxnr.simplemusicplayer.data.search
 import brunoxnr.simplemusicplayer.data.sortedBy
 import brunoxnr.simplemusicplayer.data.parseFileName
 import brunoxnr.simplemusicplayer.ui.components.formatDuration
+import brunoxnr.simplemusicplayer.ui.components.formatSongList
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -70,6 +71,23 @@ class LibraryLogicTest {
         assertEquals("Vários", album.subtitle)
 
         assertEquals(listOf("Rock"), folders.searchGroups("rock").map { it.title })
+    }
+
+    @Test
+    fun formatsSharedSongListInOrder() {
+        val songs = listOf(
+            song(1, "Even Flow", artist = "Pearl Jam", durationMs = 293_000),
+            song(2, "Alive", artist = "Pearl Jam", durationMs = 341_000),
+        )
+        val expected = """
+            Viagem — 2 músicas • 10:34
+
+            1. Even Flow — Pearl Jam (4:53)
+            2. Alive — Pearl Jam (5:41)
+
+            Rodapé
+        """.trimIndent()
+        assertEquals(expected, formatSongList("Viagem", "2 músicas", songs, "Rodapé"))
     }
 
     @Test

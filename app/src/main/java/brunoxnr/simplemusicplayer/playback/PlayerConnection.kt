@@ -93,26 +93,38 @@ class PlayerConnection(context: Context, scope: CoroutineScope) {
     // Starting playback
 
     /** Replaces the queue with [songs] and starts at [startIndex] */
+    /**
+     * Replaces the queue with [songs] in list order, starting at [startIndex].
+     * What the user taps is what plays: starting a list always turns shuffle off
+     * (use [shuffleAll] to play it shuffled).
+     */
     fun playSongs(songs: List<Song>, startIndex: Int = 0) {
-        val c = controller ?: return
-        if (songs.isEmpty()) return
-        var items = songs.map { it.toMediaItem() }
-        var start = startIndex.coerceIn(songs.indices)
-        if (_state.value.shuffleEnabled) {
-            orderBeforeShuffle = songs.map { it.id }
-            items = listOf(items[start]) + items.filterIndexed { i, _ -> i != start }.shuffled()
-            start = 0
-        }
-        c.setMediaItems(items, start, 0L)
-        c.prepare()
-        c.play()
+        setQueue(songs, startIndex.coerceIn(songs.indices), shuffle = false)
     }
 
     /** Plays [songs] in random order, turning shuffle on */
     fun shuffleAll(songs: List<Song>) {
         if (songs.isEmpty()) return
-        setShuffleFlag(true)
-        playSongs(songs, songs.indices.random())
+        setQueue(songs, songs.indices.random(), shuffle = true)
+    }
+
+    private fun setQueue(songs: List<Song>, startIndex: Int, shuffle: Boolean) {
+        val c = controller ?: return
+        if (songs.isEmpty()) return
+        setShuffleFlag(shuffle)
+        var items = songs.map { it.toMediaItem() }
+        var start = startIndex
+        if (shuffle) {
+            // The chosen song first, the rest shuffled; turning shuffle off restores list order
+            orderBeforeShuffle = songs.map { it.id }
+            items = listOf(items[start]) + items.filterIndexed { i, _ -> i != start }.shuffled()
+            start = 0
+        } else {
+            orderBeforeShuffle = null
+        }
+        c.setMediaItems(items, start, 0L)
+        c.prepare()
+        c.play()
     }
 
     // Transport controls

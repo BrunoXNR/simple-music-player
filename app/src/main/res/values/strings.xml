@@ -83,7 +83,6 @@
     <string name="repeat_off">Repetição desativada</string>
     <string name="repeat_all">Repetir todas</string>
     <string name="repeat_one">Repetir uma</string>
-    <string name="close_player">Fechar</string>
     <string name="message_added_to_queue">“%1$s” adicionada à fila</string>
     <string name="message_play_next">“%1$s” tocará a seguir</string>
     <string name="clear_queue_title">Limpar fila?</string>
@@ -126,6 +125,21 @@
     <string name="empty_collection_title">Lista vazia</string>
     <string name="empty_playlist_message">Toque em + para adicionar músicas a esta playlist.</string>
     <string name="empty_playlists_message">Crie playlists para organizar suas músicas.</string>
+
+    <!-- About -->
+    <!-- Support address shown on the About screen; the contact row stays hidden while it is empty -->
+    <string name="support_email" translatable="false"></string>
+    <string name="about_title">Sobre</string>
+    <string name="about_version">Versão %1$s</string>
+    <string name="about_tagline">Um player de música simples e sem anúncios para as músicas salvas no seu aparelho.</string>
+    <string name="about_privacy_title">Privacidade</string>
+    <string name="about_privacy_text">O app não coleta nenhum dado e não acessa a internet. Suas músicas, playlists e favoritas ficam somente no seu aparelho.</string>
+    <string name="about_support">Fale com o suporte</string>
+    <string name="about_support_subject">Simple Music Player %1$s</string>
+    <string name="about_licenses">Licenças de código aberto</string>
+    <string name="about_licenses_summary">Bibliotecas usadas pelo app</string>
+    <string name="about_licenses_intro">O Simple Music Player usa estas bibliotecas de código aberto, todas sob a Licença Apache 2.0:</string>
+    <string name="about_view_license">Ver licença</string>
 
     <!-- Permission -->
     <string name="permission_title">Acesso às suas músicas</string>

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MoreVert
@@ -57,6 +58,7 @@ import brunoxnr.simplemusicplayer.ui.components.NameDialog
 import brunoxnr.simplemusicplayer.ui.components.PlaylistPickerSheet
 import brunoxnr.simplemusicplayer.ui.components.SongActionsSheet
 import brunoxnr.simplemusicplayer.ui.components.shareSongList
+import brunoxnr.simplemusicplayer.ui.screens.AboutScreen
 import brunoxnr.simplemusicplayer.ui.screens.AddSongsScreen
 import brunoxnr.simplemusicplayer.ui.screens.MiniPlayer
 import brunoxnr.simplemusicplayer.ui.screens.NowPlayingScreen
@@ -69,6 +71,7 @@ import kotlinx.coroutines.launch
 // Simple string routes, kept in a saveable back stack
 private const val ROUTE_HOME = "home"
 private const val ROUTE_FAVORITES = "favorites"
+private const val ROUTE_ABOUT = "about"
 private const val PREFIX_PLAYLIST = "playlist/"
 private const val PREFIX_ADD_SONGS = "add/"
 /** group/<FOLDER|ALBUM|ARTIST>/<url-encoded key> */
@@ -131,7 +134,16 @@ fun MainScreen(vm: MusicViewModel) {
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
-                if (route == ROUTE_HOME) TopAppBar(title = { Text(stringResource(R.string.app_name)) })
+                if (route == ROUTE_HOME) {
+                    TopAppBar(
+                        title = { Text(stringResource(R.string.app_name)) },
+                        actions = {
+                            IconButton(onClick = { backStack.add(ROUTE_ABOUT) }) {
+                                Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.about_title))
+                            }
+                        },
+                    )
+                }
             },
             bottomBar = {
                 Column {
@@ -186,6 +198,11 @@ fun MainScreen(vm: MusicViewModel) {
                     onOpenFavorites = { backStack.add(ROUTE_FAVORITES) },
                     onOpenPlaylist = { backStack.add(PREFIX_PLAYLIST + it.id) },
                     onCreatePlaylist = { showCreatePlaylist = true },
+                    modifier = contentModifier,
+                )
+
+                route == ROUTE_ABOUT -> AboutScreen(
+                    onBack = { backStack.removeAt(backStack.lastIndex) },
                     modifier = contentModifier,
                 )
 

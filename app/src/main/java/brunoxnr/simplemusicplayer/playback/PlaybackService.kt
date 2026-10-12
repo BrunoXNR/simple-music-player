@@ -82,7 +82,7 @@ class PlaybackService : MediaSessionService() {
 
         val closeButton = CommandButton.Builder(CommandButton.ICON_UNDEFINED)
             .setCustomIconResId(R.drawable.ic_notification_close)
-            .setDisplayName(getString(R.string.close_player))
+            .setDisplayName(getString(R.string.action_close))
             .setSessionCommand(closeCommand)
             .setSlots(CommandButton.SLOT_OVERFLOW)
             .build()

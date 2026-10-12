@@ -83,6 +83,7 @@
     <string name="repeat_off">Repetição desativada</string>
     <string name="repeat_all">Repetir todas</string>
     <string name="repeat_one">Repetir uma</string>
+    <string name="close_player">Fechar</string>
     <string name="message_added_to_queue">“%1$s” adicionada à fila</string>
     <string name="message_play_next">“%1$s” tocará a seguir</string>
     <string name="clear_queue_title">Limpar fila?</string>

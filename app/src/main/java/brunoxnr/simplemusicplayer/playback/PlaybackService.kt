@@ -2,6 +2,7 @@ package brunoxnr.simplemusicplayer.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Bundle
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -9,10 +10,14 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.CommandButton
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import brunoxnr.simplemusicplayer.MainActivity
 import brunoxnr.simplemusicplayer.MusicApplication
+import brunoxnr.simplemusicplayer.R
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
@@ -75,10 +80,21 @@ class PlaybackService : MediaSessionService() {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
+        val closeButton = CommandButton.Builder(CommandButton.ICON_UNDEFINED)
+            .setCustomIconResId(R.drawable.ic_notification_close)
+            .setDisplayName(getString(R.string.close_player))
+            .setSessionCommand(closeCommand)
+            .setSlots(CommandButton.SLOT_OVERFLOW)
+            .build()
+
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(openAppIntent)
             .setCallback(SessionCallback())
+            .setMediaButtonPreferences(listOf(closeButton))
             .build()
+
+        // A stopped player (the close button) has no notification; only paused/playing ones do
+        setShowNotificationForIdlePlayer(SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER)
 
         restoreLastSession(player)
         startPositionSaver(player)
@@ -154,7 +170,43 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    /**
+     * The notification's close button: saves where the user stopped, removes the notification and
+     * ends the service. The queue is kept, so opening the app (or a headset play) continues from there.
+     */
+    private fun closePlayer(player: Player) {
+        stateStore.save(player)
+        // Idle player = no notification, even while the app's UI is still connected to the session
+        player.stop()
+        pauseAllPlayersAndStopSelf()
+    }
+
     private inner class SessionCallback : MediaSession.Callback {
+        override fun onConnect(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): MediaSession.ConnectionResult =
+            MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(
+                    MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                        .add(closeCommand)
+                        .build(),
+                )
+                .build()
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle,
+        ): ListenableFuture<SessionResult> {
+            if (customCommand.customAction != ACTION_CLOSE) {
+                return super.onCustomCommand(session, controller, customCommand, args)
+            }
+            closePlayer(session.player)
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+        }
+
         override fun onAddMediaItems(
             mediaSession: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -180,5 +232,10 @@ class PlaybackService : MediaSessionService() {
             }
             return result
         }
+    }
+
+    private companion object {
+        const val ACTION_CLOSE = "brunoxnr.simplemusicplayer.CLOSE"
+        val closeCommand = SessionCommand(ACTION_CLOSE, Bundle.EMPTY)
     }
 }

@@ -1,41 +1,47 @@
 # Simple Music Player
 
-Player de MP3 para Android, simples e direot ao ponto: Reproduz as músicas salvas no aparelho, sem anúncios
-e sem acesso à internet.
+**Um player de música simples para Android: toca as músicas salvas no seu celular, sem anúncios,
+sem cadastro e sem internet.**
 
-## Funcionalidades
+Muitos celulares deixaram de vir com um player de MP3. O Simple Music Player ocupa esse espaço
+fazendo só o básico, e bem feito: abriu, suas músicas já estão lá.
 
-- Biblioteca lida automaticamente do aparelho (MediaStore), com busca, ordenação e filtros por
-  favoritas, pastas, álbuns e artistas
-- Reprodução em segundo plano com controles na notificação, tela de bloqueio, fones e Bluetooth
-- Retoma a última fila e posição, inclusive pelo botão play do fone com o app fechado
-- Fila editável (tocar a seguir, adicionar, reordenar, remover), aleatório e repetição
-- Favoritos e playlists salvos localmente
+> Em breve na Google Play, gratuito.
 
-## Stack
+## O que ele faz
 
-Kotlin, Jetpack Compose (Material 3), Media3 (ExoPlayer + MediaSessionService) e Room.
-`minSdk` 26 (Android 8.0), `targetSdk` 37.
+**Sua biblioteca, pronta ao abrir**
+- Encontra sozinho as músicas do aparelho: MP3, M4A, FLAC, OGG e WAV
+- Busca por título, artista ou álbum
+- Ordena por título, artista, álbum, duração ou adicionadas recentemente
+- Navega por pastas, álbuns e artistas
 
-## Estrutura
+**Toca do jeito que você espera**
+- Continua tocando com a tela desligada
+- Controles na notificação, na tela de bloqueio, no fone e no Bluetooth
+- Aleatório e repetição (todas ou uma)
+- Retoma a última música de onde parou, inclusive pelo botão play do fone
 
-```
-app/src/main/java/brunoxnr/simplemusicplayer/
-├── data/        Leitura do MediaStore, modelos, agrupamento e banco Room
-├── playback/    Serviço de reprodução e conexão da interface com o player
-└── ui/          Telas Compose, componentes e tema
-```
+**Organize do seu jeito**
+- Fila editável: tocar a seguir, adicionar, reordenar e remover
+- Favoritas com um toque
+- Playlists para criar, renomear e reorganizar
 
-## Desenvolvimento
+Tema claro e escuro conforme o sistema.
 
-Abra a pasta do repositório no Android Studio e use **Run**. Pelo terminal:
+## Privacidade
 
-```sh
-./gradlew installDebug        # instala no aparelho/emulador conectado
-./gradlew testDebugUnitTest   # testes unitários
-./gradlew lintDebug           # análise estática
-./gradlew assembleRelease     # APK de release (ainda sem assinatura)
-```
+O app **não coleta nenhum dado** e não acessa a internet. Suas playlists e favoritas ficam somente
+no seu aparelho. Leia a [política de privacidade](https://brunoxnr.github.io/simple-music-player/privacidade.html).
 
-Sem Java no PATH, aponte `JAVA_HOME` para o JDK do Android Studio
-(`C:\Program Files\Android\Android Studio\jbr`).
+## Requisitos
+
+Android 8.0 ou superior.
+
+## Contato
+
+Dúvidas, sugestões ou problemas: [contato.synnode@gmail.com](mailto:contato.synnode@gmail.com)
+
+---
+
+Quer compilar o app? Veja as [notas de desenvolvimento](docs/desenvolvimento.md).

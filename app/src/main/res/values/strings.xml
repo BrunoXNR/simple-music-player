@@ -128,7 +128,7 @@
 
     <!-- About -->
     <!-- Support address shown on the About screen; the contact row stays hidden while it is empty -->
-    <string name="support_email" translatable="false"></string>
+    <string name="support_email" translatable="false">contato.synnode@gmail.com</string>
     <string name="about_title">Sobre</string>
     <string name="about_version">Versão %1$s</string>
     <string name="about_tagline">Um player de música simples e sem anúncios para as músicas salvas no seu aparelho.</string>

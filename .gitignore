@@ -16,6 +16,9 @@ captures/
 *.keystore
 keystore.properties
 
+# Personal Play Console draft (listing texts and form answers)
+docs/play-store.md
+
 # OS
 .DS_Store
 desktop.ini

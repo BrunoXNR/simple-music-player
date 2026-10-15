@@ -1,47 +1,16 @@
 # Simple Music Player
 
-**Um player de música simples para Android: toca as músicas salvas no seu celular, sem anúncios,
-sem cadastro e sem internet.**
+**Um player de música para Android, realmente gratuito, sem anúncios e offline.**
 
-Muitos celulares deixaram de vir com um player de MP3. O Simple Music Player ocupa esse espaço
-fazendo só o básico, e bem feito: abriu, suas músicas já estão lá.
+O Simple Music Player é um aplicativo de reprodução de músicas desenvolvido para aparelhos Android. Ele cumpre apenas um papel simples: reproduzir e organizar músicas que estejam armazenadas localmente no celular, resgatando a simplicidade dos tradicionais players de MP3.
 
-> Em breve na Google Play, gratuito.
+Com a redução da presença de players de música nativos em muitos aparelhos, a proposta é oferecer uma alternativa leve e prática para quem deseja ouvir os próprios arquivos de áudio sem depender de serviços de streaming, criar uma conta ou lidar com anúncios.
 
-## O que ele faz
+O aplicativo reúne a biblioteca de arquivos de áudio do dispositivo em um só lugar, permitindo encontrar e organizar as músicas, navegar por artistas e álbuns, criar playlists e filas de reprodução de maneira simples e intuitiva.
 
-**Sua biblioteca, pronta ao abrir**
-- Encontra sozinho as músicas do aparelho: MP3, M4A, FLAC, OGG e WAV
-- Busca por título, artista ou álbum
-- Ordena por título, artista, álbum, duração ou adicionadas recentemente
-- Navega por pastas, álbuns e artistas
+## Informações Adicionais
 
-**Toca do jeito que você espera**
-- Continua tocando com a tela desligada
-- Controles na notificação, na tela de bloqueio, no fone e no Bluetooth
-- Aleatório e repetição (todas ou uma)
-- Retoma a última música de onde parou, inclusive pelo botão play do fone
-
-**Organize do seu jeito**
-- Fila editável: tocar a seguir, adicionar, reordenar e remover
-- Favoritas com um toque
-- Playlists para criar, renomear e reorganizar
-
-Tema claro e escuro conforme o sistema.
-
-## Privacidade
-
-O app **não coleta nenhum dado** e não acessa a internet. Suas playlists e favoritas ficam somente
-no seu aparelho. Leia a [política de privacidade](https://brunoxnr.github.io/simple-music-player/privacidade.html).
-
-## Requisitos
-
-Android 8.0 ou superior.
-
-## Contato
-
-Dúvidas, sugestões ou problemas: [contato.synnode@gmail.com](mailto:contato.synnode@gmail.com)
-
----
-
-Quer compilar o app? Veja as [notas de desenvolvimento](docs/desenvolvimento.md).
+- **Plataforma:** Android 8.0 ou superior
+- **Preço:** 100% gratuito, sem anúncios e sem assinaturas
+- **Privacidade:** [Política de Privacidade](https://brunoxnr.github.io/simple-music-player/privacidade.html)
+- **Contato:** [contato.synnode@gmail.com](mailto\:contato.synnode@gmail.com)

@@ -1,3 +1,5 @@
+<img src="docs/loja/icone-512.png" alt="Ícone do Simple Music Player" width="120">
+
 # Simple Music Player
 
 **Um player de música para Android, realmente gratuito, sem anúncios e offline.**

@@ -40,6 +40,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
@@ -85,7 +86,8 @@ fun AboutScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                // Same layers as the launcher icon, so it follows any future icon redesign
+                // Same layers as the launcher icon, so it follows any future icon redesign.
+                // Scaled 1.5x because launchers only show the central 72dp of the 108dp layer.
                 Box(
                     modifier = Modifier
                         .size(88.dp)
@@ -95,7 +97,7 @@ fun AboutScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     Image(
                         painterResource(R.drawable.ic_launcher_foreground),
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.fillMaxSize().scale(1.5f),
                     )
                 }
                 Text(

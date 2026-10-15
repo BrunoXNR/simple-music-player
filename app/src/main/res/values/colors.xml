@@ -2,5 +2,7 @@
 <resources>
     <color name="window_background">#FFF4FBF9</color>
     <color name="ic_launcher_background">#FF006A67</color>
-    <color name="ic_launcher_foreground">#FFFFFFFF</color>
+    <color name="ic_launcher_disc">#FF0F1E1D</color>
+    <color name="ic_launcher_groove">#FF2B3F3D</color>
+    <color name="ic_launcher_label">#FFFFC46B</color>
 </resources>

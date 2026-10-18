@@ -1,4 +1,4 @@
-<img src="docs/loja/icone-512.png" alt="Ícone do Simple Music Player" width="120">
+<img src="docs/loja/banner.png" alt="Banner do Simple Music Player">
 
 # Simple Music Player
 

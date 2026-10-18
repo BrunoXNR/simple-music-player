@@ -133,7 +133,7 @@
     <string name="support_email" translatable="false">contato.synnode@gmail.com</string>
     <string name="about_title">Sobre</string>
     <string name="about_version">Versão %1$s</string>
-    <string name="about_tagline">Um player de música simples e sem anúncios para as músicas salvas no seu aparelho.</string>
+    <string name="about_tagline">Um player de música simples. Gratuito, sem anúncios e offline.</string>
     <string name="about_privacy_title">Privacidade</string>
     <string name="about_privacy_text">O app não coleta nenhum dado e não acessa a internet. Suas músicas, playlists e favoritas ficam somente no seu aparelho.</string>
     <string name="about_support">Fale com o suporte</string>

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools" tools:locale="pt">
     <string name="app_name" translatable="false">Simple Music Player</string>
+    <!-- Short name under the launcher icon, so it isn't truncated -->
+    <string name="launcher_name" translatable="false">SimpleMP</string>
 
     <!-- Navigation -->
     <string name="tab_songs">Músicas</string>

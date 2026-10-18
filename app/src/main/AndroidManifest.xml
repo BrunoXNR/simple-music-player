@@ -27,6 +27,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:label="@string/launcher_name"
             android:launchMode="singleTop"
             android:theme="@style/Theme.SimpleMusicPlayer">
             <intent-filter>

@@ -1,0 +1,15 @@
+<!doctype html>
+<!-- Store screenshot frame (1080x1920). Usage: moldura.html?img=originais/01-musicas.png&t=Linha 1|Linha 2 -->
+<html><head><meta charset="utf-8"><style>
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden}
+body{background:radial-gradient(circle at 50% 30%,#0A7F7B 0,#005451 75%);font-family:"Segoe UI Variable Display","Segoe UI",sans-serif;color:#fff}
+h1{margin:0;position:absolute;top:120px;left:0;right:0;text-align:center;font-size:68px;font-weight:700;letter-spacing:-1px;line-height:1.15}
+.bar{position:absolute;top:322px;left:512px;width:56px;height:6px;border-radius:3px;background:#FFC46B}
+img{position:absolute;top:400px;left:50%;transform:translateX(-50%);height:1440px;border-radius:44px;box-shadow:0 24px 60px rgba(0,0,0,.35);outline:10px solid #0F1E1D}
+</style></head><body>
+<h1 id="t"></h1><div class="bar"></div><img id="i">
+<script>
+const p=new URLSearchParams(location.search);
+document.getElementById('t').innerHTML=(p.get('t')||'').split('|').join('<br>');
+document.getElementById('i').src=p.get('img');
+</script></body></html>

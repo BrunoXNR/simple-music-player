@@ -19,6 +19,10 @@ keystore.properties
 # Personal Play Console draft (listing texts and form answers)
 docs/play-store.md
 
+# Play Store art and its sources: kept locally, only the README banner is published
+docs/loja/*
+!docs/loja/banner.png
+
 # OS
 .DS_Store
 desktop.ini

@@ -29,6 +29,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     val player = PlayerConnection(application, viewModelScope)
     val songFiles = app.songFiles
+    val settings = app.settings
 
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
     val songs: StateFlow<List<Song>> = _songs.asStateFlow()

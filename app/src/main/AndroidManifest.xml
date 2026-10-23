@@ -47,6 +47,16 @@
             </intent-filter>
         </service>
 
+        <!-- AppCompat stores the in-app language choice itself on Android 12 and older -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
         <!-- Lets headset / Bluetooth / car play buttons resume playback when the app isn't running -->
         <receiver
             android:name="androidx.media3.session.MediaButtonReceiver"

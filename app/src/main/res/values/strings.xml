@@ -139,6 +139,28 @@
     <string name="empty_playlist_message">Tap + to add songs to this playlist.</string>
     <string name="empty_playlists_message">Create playlists to organize your music.</string>
 
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="settings_color">Color</string>
+    <string name="color_wallpaper">Wallpaper colors</string>
+    <string name="color_teal">Teal</string>
+    <string name="color_amber">Amber</string>
+    <string name="color_blue">Blue</string>
+    <string name="color_purple">Purple</string>
+    <string name="color_green">Green</string>
+    <string name="color_pink">Pink</string>
+    <string name="settings_language">Language</string>
+    <string name="language_system">System default</string>
+    <!-- Language names are always shown in their own language -->
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_portuguese" translatable="false">Português</string>
+    <string name="language_spanish" translatable="false">Español</string>
+
     <!-- About -->
     <!-- Support address shown on the About screen; the contact row stays hidden while it is empty -->
     <string name="support_email" translatable="false">contato.synnode@gmail.com</string>

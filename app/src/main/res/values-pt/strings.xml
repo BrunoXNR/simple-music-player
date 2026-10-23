@@ -141,6 +141,24 @@
     <string name="empty_playlist_message">Toque em + para adicionar músicas a esta playlist.</string>
     <string name="empty_playlists_message">Crie playlists para organizar suas músicas.</string>
 
+    <!-- Settings -->
+    <string name="settings_title">Configurações</string>
+    <string name="settings_appearance">Aparência</string>
+    <string name="settings_theme">Tema</string>
+    <string name="theme_system">Sistema</string>
+    <string name="theme_light">Claro</string>
+    <string name="theme_dark">Escuro</string>
+    <string name="settings_color">Cor</string>
+    <string name="color_wallpaper">Cores do papel de parede</string>
+    <string name="color_teal">Turquesa</string>
+    <string name="color_amber">Âmbar</string>
+    <string name="color_blue">Azul</string>
+    <string name="color_purple">Roxo</string>
+    <string name="color_green">Verde</string>
+    <string name="color_pink">Rosa</string>
+    <string name="settings_language">Idioma</string>
+    <string name="language_system">Padrão do sistema</string>
+
     <!-- About -->
     <string name="about_title">Sobre</string>
     <string name="about_version">Versão %1$s</string>

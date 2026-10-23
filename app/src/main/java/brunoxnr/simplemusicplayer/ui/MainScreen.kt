@@ -18,7 +18,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
-import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MoreVert
@@ -75,6 +75,7 @@ import brunoxnr.simplemusicplayer.ui.screens.MiniPlayer
 import brunoxnr.simplemusicplayer.ui.screens.NowPlayingScreen
 import brunoxnr.simplemusicplayer.ui.screens.PlaylistsScreen
 import brunoxnr.simplemusicplayer.ui.screens.QueueScreen
+import brunoxnr.simplemusicplayer.ui.screens.SettingsScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongCollectionScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongsScreen
 import java.text.Collator
@@ -83,6 +84,7 @@ import kotlinx.coroutines.launch
 // Simple string routes, kept in a saveable back stack
 private const val ROUTE_HOME = "home"
 private const val ROUTE_FAVORITES = "favorites"
+private const val ROUTE_SETTINGS = "settings"
 private const val ROUTE_ABOUT = "about"
 private const val PREFIX_PLAYLIST = "playlist/"
 private const val PREFIX_ADD_SONGS = "add/"
@@ -189,8 +191,8 @@ fun MainScreen(vm: MusicViewModel) {
                     TopAppBar(
                         title = { Text(stringResource(R.string.app_name)) },
                         actions = {
-                            IconButton(onClick = { backStack.add(ROUTE_ABOUT) }) {
-                                Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.about_title))
+                            IconButton(onClick = { backStack.add(ROUTE_SETTINGS) }) {
+                                Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings_title))
                             }
                         },
                     )
@@ -262,6 +264,22 @@ fun MainScreen(vm: MusicViewModel) {
                     },
                     modifier = contentModifier,
                 )
+
+                route == ROUTE_SETTINGS -> {
+                    val themeMode by vm.settings.themeMode.collectAsStateWithLifecycle()
+                    val themeColor by vm.settings.themeColor.collectAsStateWithLifecycle()
+                    SettingsScreen(
+                        themeMode = themeMode,
+                        themeColor = themeColor,
+                        language = vm.settings.language,
+                        onThemeModeChange = vm.settings::setThemeMode,
+                        onThemeColorChange = vm.settings::setThemeColor,
+                        onLanguageChange = vm.settings::setLanguage,
+                        onOpenAbout = { backStack.add(ROUTE_ABOUT) },
+                        onBack = { backStack.removeAt(backStack.lastIndex) },
+                        modifier = contentModifier,
+                    )
+                }
 
                 route == ROUTE_ABOUT -> AboutScreen(
                     onBack = { backStack.removeAt(backStack.lastIndex) },

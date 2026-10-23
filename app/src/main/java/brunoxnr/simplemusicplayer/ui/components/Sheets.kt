@@ -16,6 +16,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DriveFileRenameOutline
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.QueuePlayNext
@@ -69,6 +71,9 @@ fun SongActionsSheet(
     onAddToPlaylist: () -> Unit,
     onToggleFavorite: () -> Unit,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    /** File actions; null hides them (Android 10 and older) */
+    onRenameFile: (() -> Unit)? = null,
+    onDeleteFile: (() -> Unit)? = null,
 ) {
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.navigationBarsPadding()) {
@@ -115,6 +120,17 @@ fun SongActionsSheet(
                     Icons.Rounded.RemoveCircleOutline,
                     stringResource(R.string.action_remove_from_playlist),
                     act(onRemoveFromPlaylist),
+                )
+            }
+            if (onRenameFile != null) {
+                SheetAction(Icons.Rounded.DriveFileRenameOutline, stringResource(R.string.action_rename_file), act(onRenameFile))
+            }
+            if (onDeleteFile != null) {
+                SheetAction(
+                    icon = Icons.Rounded.Delete,
+                    label = stringResource(R.string.action_delete_file),
+                    onClick = act(onDeleteFile),
+                    iconTint = MaterialTheme.colorScheme.error,
                 )
             }
 
@@ -211,7 +227,10 @@ fun PlaylistPickerSheet(
     }
 }
 
-/** Asks for a playlist name (create / rename) */
+/**
+ * Asks for a name (playlist create / rename, file rename). [validate] returns an error message
+ * to show under the field, or null when the name is fine.
+ */
 @Composable
 fun NameDialog(
     title: String,
@@ -219,6 +238,9 @@ fun NameDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit,
     initialValue: String = "",
+    label: String = stringResource(R.string.playlist_name),
+    suffix: String? = null,
+    validate: (String) -> String? = { null },
 ) {
     var name by rememberSaveable { mutableStateOf(initialValue) }
     val focusRequester = remember { FocusRequester() }
@@ -234,6 +256,8 @@ fun NameDialog(
         action()
     }
 
+    val error = if (name.isBlank()) null else validate(name.trim())
+
     AlertDialog(
         onDismissRequest = { closing(onDismiss) },
         title = { Text(title) },
@@ -241,13 +265,16 @@ fun NameDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text(stringResource(R.string.playlist_name)) },
+                label = { Text(label) },
+                suffix = suffix?.let { { Text(it) } },
+                isError = error != null,
+                supportingText = error?.let { { Text(it) } },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
             )
         },
         confirmButton = {
-            TextButton(onClick = { closing { onConfirm(name.trim()) } }, enabled = name.isNotBlank()) {
+            TextButton(onClick = { closing { onConfirm(name.trim()) } }, enabled = name.isNotBlank() && error == null) {
                 Text(confirmLabel, fontWeight = FontWeight.SemiBold)
             }
         },

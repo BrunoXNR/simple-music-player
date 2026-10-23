@@ -113,6 +113,14 @@
     <string name="message_playlists_sorted">Playlists em ordem alfabética</string>
     <string name="action_undo">Desfazer</string>
     <string name="action_sort_by">Ordenar por…</string>
+    <string name="action_rename_file">Renomear arquivo</string>
+    <string name="action_delete_file">Excluir do aparelho</string>
+    <string name="file_name">Nome do arquivo</string>
+    <string name="error_invalid_file_name">Nome inválido. Evite os caracteres \\ / : * ? \" &lt; &gt; |</string>
+    <string name="error_file_name_taken">Já existe um arquivo com esse nome nesta pasta</string>
+    <string name="message_file_renamed">Arquivo renomeado para “%1$s”</string>
+    <string name="message_file_rename_failed">Não foi possível renomear o arquivo</string>
+    <string name="message_file_trashed">Música movida para a lixeira do aparelho</string>
     <string name="sort_duration_shortest">Duração (mais curtas primeiro)</string>
     <string name="sort_duration_longest">Duração (mais longas primeiro)</string>
     <string name="message_playlist_sorted">Playlist “%1$s” reordenada</string>

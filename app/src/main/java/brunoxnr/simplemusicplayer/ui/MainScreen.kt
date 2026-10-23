@@ -1,7 +1,12 @@
 package brunoxnr.simplemusicplayer.ui
 
+import android.app.Activity
 import android.net.Uri
+import android.os.Build
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -53,7 +58,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import brunoxnr.simplemusicplayer.R
 import brunoxnr.simplemusicplayer.data.GroupType
 import brunoxnr.simplemusicplayer.data.Song
+import brunoxnr.simplemusicplayer.data.SongFiles
 import brunoxnr.simplemusicplayer.data.SongSort
+import brunoxnr.simplemusicplayer.data.fileBaseName
+import brunoxnr.simplemusicplayer.data.fileExtension
 import brunoxnr.simplemusicplayer.data.groupedBy
 import brunoxnr.simplemusicplayer.data.sortedBy
 import brunoxnr.simplemusicplayer.ui.components.ConfirmDialog
@@ -122,6 +130,11 @@ fun MainScreen(vm: MusicViewModel) {
     var showCreatePlaylist by rememberSaveable { mutableStateOf(false) }
     var renamePlaylistId by rememberSaveable { mutableStateOf<Long?>(null) }
     var deletePlaylistId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var renameFileSongId by rememberSaveable { mutableStateOf<Long?>(null) }
+    // Waiting for the system consent dialog; saved in case the activity is recreated meanwhile
+    var pendingRenameSongId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var pendingRenameName by rememberSaveable { mutableStateOf("") }
+    var pendingTrashSongId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -132,6 +145,28 @@ fun MainScreen(vm: MusicViewModel) {
             snackbarHostState.currentSnackbarData?.dismiss()
             val result = snackbarHostState.showSnackbar(message, actionLabel, duration = SnackbarDuration.Short)
             if (result == SnackbarResult.ActionPerformed) onAction()
+        }
+    }
+
+    val renameConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        val song = pendingRenameSongId?.let { songsById[it] }
+        val newName = pendingRenameName
+        pendingRenameSongId = null
+        if (result.resultCode == Activity.RESULT_OK && song != null) {
+            vm.renameSongFile(song, newName) { renamed ->
+                notify(
+                    if (renamed) resources.getString(R.string.message_file_renamed, newName + song.fileExtension)
+                    else resources.getString(R.string.message_file_rename_failed)
+                )
+            }
+        }
+    }
+    val trashConsent = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+        val songId = pendingTrashSongId
+        pendingTrashSongId = null
+        if (result.resultCode == Activity.RESULT_OK && songId != null) {
+            vm.onSongTrashed(songId)
+            notify(resources.getString(R.string.message_file_trashed))
         }
     }
 
@@ -461,7 +496,53 @@ fun MainScreen(vm: MusicViewModel) {
             onRemoveFromPlaylist = target.playlistId?.let { playlistId ->
                 { vm.removeFromPlaylist(playlistId, song.id) }
             },
+            onRenameFile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                { renameFileSongId = song.id }
+            } else null,
+            onDeleteFile = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                {
+                    pendingTrashSongId = song.id
+                    trashConsent.launch(IntentSenderRequest.Builder(vm.songFiles.trashRequest(listOf(song))).build())
+                }
+            } else null,
         )
+    }
+
+    renameFileSongId?.let { id ->
+        val song = songsById[id]
+        if (song == null) {
+            renameFileSongId = null
+        } else {
+            // Other files in the same folder, to catch name clashes before asking the system
+            val takenNames = remember(songs, song) {
+                songs.filter { it.folder == song.folder && it.id != song.id }.map { it.fileName.lowercase() }.toSet()
+            }
+            val invalidName = stringResource(R.string.error_invalid_file_name)
+            val nameTaken = stringResource(R.string.error_file_name_taken)
+            NameDialog(
+                title = stringResource(R.string.action_rename_file),
+                confirmLabel = stringResource(R.string.action_rename),
+                initialValue = song.fileBaseName,
+                label = stringResource(R.string.file_name),
+                suffix = song.fileExtension.ifEmpty { null },
+                validate = { name ->
+                    when {
+                        !SongFiles.isValidBaseName(name) -> invalidName
+                        (name + song.fileExtension).lowercase() in takenNames -> nameTaken
+                        else -> null
+                    }
+                },
+                onConfirm = { name ->
+                    renameFileSongId = null
+                    if (name != song.fileBaseName && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        pendingRenameSongId = song.id
+                        pendingRenameName = name
+                        renameConsent.launch(IntentSenderRequest.Builder(vm.songFiles.writeRequest(song)).build())
+                    }
+                },
+                onDismiss = { renameFileSongId = null },
+            )
+        }
     }
 
     pickerSong?.let { song ->

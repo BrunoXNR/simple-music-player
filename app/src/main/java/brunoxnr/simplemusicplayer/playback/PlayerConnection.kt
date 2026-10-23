@@ -232,6 +232,15 @@ class PlayerConnection(context: Context, scope: CoroutineScope) {
         c.moveMediaItem(from, to)
     }
 
+    /** Removes every queue entry of [songId] (e.g. its file was deleted) */
+    fun removeSong(songId: Long) {
+        val c = controller ?: return
+        for (i in c.mediaItemCount - 1 downTo 0) {
+            if (c.getMediaItemAt(i).songId == songId) c.removeMediaItem(i)
+        }
+        orderBeforeShuffle = orderBeforeShuffle?.filter { it != songId }
+    }
+
     /** Removes everything except the song that is playing */
     fun clearQueue() {
         val c = controller ?: return

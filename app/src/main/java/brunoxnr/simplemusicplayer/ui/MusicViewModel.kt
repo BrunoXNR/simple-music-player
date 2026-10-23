@@ -28,6 +28,7 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     private val repository = app.libraryRepository
 
     val player = PlayerConnection(application, viewModelScope)
+    val songFiles = app.songFiles
 
     private val _songs = MutableStateFlow<List<Song>>(emptyList())
     val songs: StateFlow<List<Song>> = _songs.asStateFlow()
@@ -114,6 +115,22 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
     fun reorderPlaylist(playlistId: Long, songIds: List<Long>) {
         viewModelScope.launch { repository.reorder(playlistId, songIds) }
+    }
+
+    // Files (Android 11+; the system asks for consent before these run)
+
+    fun renameSongFile(song: Song, newBaseName: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val renamed = app.songFiles.rename(song, newBaseName)
+            if (renamed) loadLibrary()
+            onResult(renamed)
+        }
+    }
+
+    /** The file is already in the system trash; drop it from the queue and the library */
+    fun onSongTrashed(songId: Long) {
+        player.removeSong(songId)
+        viewModelScope.launch { loadLibrary() }
     }
 
     /** Saves the order of the playlists list (ids from top to bottom) */

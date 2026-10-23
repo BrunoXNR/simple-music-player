@@ -23,6 +23,9 @@ Abra a pasta do repositório no Android Studio e use **Run**. Pelo terminal:
 ./gradlew bundleRelease       # AAB para a Play Store (assinado se houver keystore.properties)
 ```
 
+O build de debug instala como um app separado, **SimpleMP Dev** (pacote `brunoxnr.simplemusicplayer.dev`),
+para conviver com a versão da Play Store no mesmo aparelho.
+
 Sem Java no PATH, aponte `JAVA_HOME` para o JDK do Android Studio
 (`C:\Program Files\Android\Android Studio\jbr`).
 

@@ -318,6 +318,7 @@ private fun SongSort.labelRes(): Int = when (this) {
     SongSort.ALBUM -> R.string.sort_album
     SongSort.DURATION -> R.string.sort_duration
     SongSort.DATE_ADDED -> R.string.sort_date_added
+    SongSort.FILE_NAME -> R.string.sort_file_name
 }
 
 @Composable

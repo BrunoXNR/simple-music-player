@@ -43,6 +43,7 @@
     <string name="sort_album">Álbum</string>
     <string name="sort_duration">Duração</string>
     <string name="sort_date_added">Adicionadas recentemente</string>
+    <string name="sort_file_name">Nome do arquivo</string>
     <plurals name="song_count">
         <item quantity="one">%d música</item>
         <item quantity="many">%d músicas</item>

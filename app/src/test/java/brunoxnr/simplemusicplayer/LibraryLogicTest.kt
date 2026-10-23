@@ -45,6 +45,13 @@ class LibraryLogicTest {
     }
 
     @Test
+    fun sortsByFileNameWithNumbersInNaturalOrder() {
+        // song() names the file "<title>.mp3"
+        val songs = listOf(song(1, "10 - Dez"), song(2, "b - Banda"), song(3, "2 - Dois"), song(4, "A - Abertura"), song(5, "02 - Zero dois"))
+        assertEquals(listOf(3L, 5L, 1L, 4L, 2L), songs.sortedBy(SongSort.FILE_NAME, ascending = true).map { it.id })
+    }
+
+    @Test
     fun parsesArtistAndTitleFromFileName() {
         assertEquals("Ana Lima" to "Café da Manhã", parseFileName("Ana Lima - Café da Manhã"))
         assertEquals("Banda" to "Música - Ao Vivo", parseFileName("Banda - Música - Ao Vivo"))

@@ -29,7 +29,7 @@ data class Playlist(
     val songIds: List<Long>,
 )
 
-enum class SongSort { TITLE, ARTIST, ALBUM, DURATION, DATE_ADDED }
+enum class SongSort { TITLE, ARTIST, ALBUM, DURATION, DATE_ADDED, FILE_NAME }
 
 fun List<Song>.sortedBy(sort: SongSort, ascending: Boolean): List<Song> {
     val comparator: Comparator<Song> = when (sort) {
@@ -40,8 +40,36 @@ fun List<Song>.sortedBy(sort: SongSort, ascending: Boolean): List<Song> {
             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.title }
         SongSort.DURATION -> compareBy { it.durationMs }
         SongSort.DATE_ADDED -> compareBy { it.dateAddedSec }
+        SongSort.FILE_NAME -> compareBy(NaturalOrder) { it.fileName }
     }
     return sortedWith(if (ascending) comparator else comparator.reversed())
+}
+
+/**
+ * Case-insensitive order where digit runs compare as numbers, like file managers do:
+ * "2 - Song" comes before "10 - Song".
+ */
+internal object NaturalOrder : Comparator<String> {
+    private val CHUNK = Regex("""\d+|\D+""")
+
+    override fun compare(a: String, b: String): Int {
+        val chunksA = CHUNK.findAll(a).map { it.value }.toList()
+        val chunksB = CHUNK.findAll(b).map { it.value }.toList()
+        for (i in 0 until minOf(chunksA.size, chunksB.size)) {
+            val x = chunksA[i]
+            val y = chunksB[i]
+            val result = if (x[0].isDigit() && y[0].isDigit()) {
+                // Compare by value without overflowing on long digit runs: strip zeros, then length
+                val nx = x.trimStart('0')
+                val ny = y.trimStart('0')
+                if (nx.length != ny.length) nx.length - ny.length else nx.compareTo(ny)
+            } else {
+                x.compareTo(y, ignoreCase = true)
+            }
+            if (result != 0) return result
+        }
+        return chunksA.size - chunksB.size
+    }
 }
 
 /** Leading track number in file names: "01 - ", "07. ", "3_", "12) " */

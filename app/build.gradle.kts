@@ -62,6 +62,11 @@ android {
         compose = true
         buildConfig = true
     }
+
+    androidResources {
+        // Lists the translated languages in the system's per-app language setting (Android 13+)
+        generateLocaleConfig = true
+    }
 }
 
 ksp {

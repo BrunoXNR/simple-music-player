@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Navigation -->
+    <string name="tab_songs">Canciones</string>
+    <string name="tab_playlists">Playlists</string>
+    <string name="favorites">Favoritas</string>
+    <string name="my_playlists">Mis playlists</string>
+    <string name="queue">Cola de reproducción</string>
+    <string name="now_playing">Reproduciendo</string>
+
+    <!-- Library -->
+    <string name="unknown_artist">Artista desconocido</string>
+    <string name="unknown_album">Álbum desconocido</string>
+    <string name="search_hint">Buscar canciones</string>
+    <string name="filter_all">Todas</string>
+    <string name="filter_favorites">Favoritas</string>
+    <string name="filter_folders">Carpetas</string>
+    <string name="filter_albums">Álbumes</string>
+    <string name="filter_artists">Artistas</string>
+    <string name="various_artists">Varios artistas</string>
+    <string name="internal_storage">Almacenamiento interno</string>
+    <plurals name="folder_count">
+        <item quantity="one">%d carpeta</item>
+        <item quantity="many">%d carpetas</item>
+        <item quantity="other">%d carpetas</item>
+    </plurals>
+    <plurals name="album_count">
+        <item quantity="one">%d álbum</item>
+        <item quantity="many">%d álbumes</item>
+        <item quantity="other">%d álbumes</item>
+    </plurals>
+    <plurals name="artist_count">
+        <item quantity="one">%d artista</item>
+        <item quantity="many">%d artistas</item>
+        <item quantity="other">%d artistas</item>
+    </plurals>
+    <string name="sort_title">Título</string>
+    <string name="sort_artist">Artista</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_duration">Duración</string>
+    <string name="sort_date_added">Añadidas recientemente</string>
+    <string name="sort_file_name">Nombre del archivo</string>
+    <plurals name="song_count">
+        <item quantity="one">%d canción</item>
+        <item quantity="many">%d canciones</item>
+        <item quantity="other">%d canciones</item>
+    </plurals>
+
+    <!-- Actions -->
+    <string name="action_play">Reproducir</string>
+    <string name="action_pause">Pausar</string>
+    <string name="action_next">Siguiente</string>
+    <string name="action_previous">Anterior</string>
+    <string name="action_shuffle">Aleatorio</string>
+    <string name="action_sort">Ordenar</string>
+    <string name="action_clear_search">Borrar búsqueda</string>
+    <string name="action_more_options">Más opciones</string>
+    <string name="action_play_next">Reproducir a continuación</string>
+    <string name="action_add_to_queue">Añadir a la cola</string>
+    <string name="action_add_to_playlist">Añadir a una playlist</string>
+    <string name="action_favorite">Añadir a favoritas</string>
+    <string name="action_unfavorite">Quitar de favoritas</string>
+    <string name="action_remove_from_playlist">Quitar de la playlist</string>
+    <string name="action_remove_from_queue">Quitar de la cola</string>
+    <string name="action_new_playlist">Nueva playlist</string>
+    <string name="action_create">Crear</string>
+    <string name="action_rename">Renombrar</string>
+    <string name="action_save">Guardar</string>
+    <string name="action_delete">Eliminar</string>
+    <string name="action_delete_playlist">Eliminar playlist</string>
+    <string name="action_cancel">Cancelar</string>
+    <string name="action_clear">Borrar</string>
+    <string name="action_close">Cerrar</string>
+    <string name="action_back">Atrás</string>
+    <string name="action_done">Listo</string>
+    <string name="action_collapse_player">Minimizar reproductor</string>
+    <string name="action_drag_to_reorder">Arrastra para reordenar</string>
+
+    <!-- Player -->
+    <string name="shuffle_on">Aleatorio activado</string>
+    <string name="shuffle_off">Aleatorio desactivado</string>
+    <string name="repeat_off">Repetición desactivada</string>
+    <string name="repeat_all">Repetir todas</string>
+    <string name="repeat_one">Repetir una</string>
+    <string name="message_added_to_queue">“%1$s” añadida a la cola</string>
+    <string name="message_play_next">“%1$s” sonará a continuación</string>
+    <string name="clear_queue_title">¿Borrar la cola?</string>
+    <string name="clear_queue_message">Se quitarán todas las canciones de la cola, excepto la que está sonando.</string>
+
+    <!-- Playlists -->
+    <string name="playlist_name">Nombre de la playlist</string>
+    <string name="add_to_playlist_title">Añadir a una playlist</string>
+    <string name="add_songs_title">Añadir canciones</string>
+    <string name="action_save_changes">Guardar cambios</string>
+    <plurals name="action_add_n_songs">
+        <item quantity="one">Añadir %d canción</item>
+        <item quantity="many">Añadir %d canciones</item>
+        <item quantity="other">Añadir %d canciones</item>
+    </plurals>
+    <string name="action_discard">Descartar</string>
+    <string name="discard_changes_title">¿Descartar los cambios?</string>
+    <string name="discard_changes_message">Las canciones marcadas aún no se han guardado en la playlist.</string>
+    <plurals name="message_songs_added">
+        <item quantity="one">%1$d canción añadida a “%2$s”</item>
+        <item quantity="many">%1$d canciones añadidas a “%2$s”</item>
+        <item quantity="other">%1$d canciones añadidas a “%2$s”</item>
+    </plurals>
+    <string name="message_playlist_updated">Playlist “%1$s” actualizada</string>
+    <string name="action_sort_by_name">Ordenar por nombre</string>
+    <string name="message_playlists_sorted">Playlists en orden alfabético</string>
+    <string name="action_undo">Deshacer</string>
+    <string name="action_sort_by">Ordenar por…</string>
+    <string name="action_rename_file">Renombrar archivo</string>
+    <string name="action_delete_file">Eliminar del dispositivo</string>
+    <string name="file_name">Nombre del archivo</string>
+    <string name="error_invalid_file_name">Nombre no válido. Evita los caracteres \\ / : * ? \" &lt; &gt; |</string>
+    <string name="error_file_name_taken">Ya existe un archivo con ese nombre en esta carpeta</string>
+    <string name="message_file_renamed">Archivo renombrado a “%1$s”</string>
+    <string name="message_file_rename_failed">No se pudo renombrar el archivo</string>
+    <string name="message_file_trashed">Canción movida a la papelera del dispositivo</string>
+    <string name="sort_duration_shortest">Duración (más cortas primero)</string>
+    <string name="sort_duration_longest">Duración (más largas primero)</string>
+    <string name="message_playlist_sorted">Playlist “%1$s” reordenada</string>
+    <string name="message_added_to_playlist">Añadida a “%1$s”</string>
+    <string name="message_removed_from_playlist">Quitada de “%1$s”</string>
+    <string name="action_share">Compartir</string>
+    <string name="share_chooser_title">Compartir lista de canciones</string>
+    <string name="share_footer">Compartido desde Simple Music Player</string>
+    <string name="delete_playlist_title">¿Eliminar la playlist?</string>
+    <string name="delete_playlist_message">Se eliminará la playlist “%1$s”. Tus canciones siguen en el dispositivo.</string>
+
+    <!-- Empty states -->
+    <string name="empty_library_title">No se encontraron canciones</string>
+    <string name="empty_library_message">Copia tus archivos de música (MP3, M4A, FLAC, OGG, WAV) al dispositivo, por ejemplo en la carpeta Música. Aparecerán aquí automáticamente.</string>
+    <string name="empty_search_title">Sin resultados</string>
+    <string name="empty_search_message">Prueba a buscar otro título, artista o álbum.</string>
+    <string name="empty_favorites_title">Aún no hay favoritas</string>
+    <string name="empty_favorites_message">Toca el corazón de una canción para añadirla a favoritas.</string>
+    <string name="empty_collection_title">Lista vacía</string>
+    <string name="empty_playlist_message">Toca + para añadir canciones a esta playlist.</string>
+    <string name="empty_playlists_message">Crea playlists para organizar tu música.</string>
+
+    <!-- About -->
+    <string name="about_title">Acerca de</string>
+    <string name="about_version">Versión %1$s</string>
+    <string name="about_tagline">Un reproductor de música sencillo. Gratis, sin anuncios y sin conexión.</string>
+    <string name="about_privacy_title">Privacidad</string>
+    <string name="about_privacy_text">La app no recopila ningún dato y no accede a internet. Tu música, tus playlists y tus favoritas se quedan solo en tu dispositivo.</string>
+    <string name="about_support">Contactar con soporte</string>
+    <string name="about_support_subject">Simple Music Player %1$s</string>
+    <string name="about_licenses">Licencias de código abierto</string>
+    <string name="about_licenses_summary">Bibliotecas usadas por la app</string>
+    <string name="about_licenses_intro">Simple Music Player usa estas bibliotecas de código abierto, todas bajo la Licencia Apache 2.0:</string>
+    <string name="about_view_license">Ver licencia</string>
+
+    <!-- Permission -->
+    <string name="permission_title">Acceso a tu música</string>
+    <string name="permission_message">Para encontrar y reproducir las canciones guardadas en tu dispositivo, la app necesita permiso para leer archivos de audio. Nada sale de tu teléfono.</string>
+    <string name="permission_denied_message">Se denegó el permiso. Para usar la app, abre los ajustes y permite el acceso a “Música y audio”.</string>
+    <string name="permission_grant">Permitir acceso</string>
+    <string name="permission_open_settings">Abrir ajustes</string>
+</resources>

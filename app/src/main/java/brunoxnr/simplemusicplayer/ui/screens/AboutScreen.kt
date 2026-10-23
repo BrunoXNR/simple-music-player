@@ -57,7 +57,7 @@ private const val APACHE_LICENSE_URL = "https://www.apache.org/licenses/LICENSE-
 /** Open source libraries shipped in the app, all under the Apache License 2.0 */
 private val openSourceLibraries = listOf(
     "AndroidX Jetpack (Compose, Material 3, Media3 / ExoPlayer, Room, Lifecycle)" to "Google",
-    "Kotlin e kotlinx.coroutines" to "JetBrains",
+    "Kotlin, kotlinx.coroutines" to "JetBrains",
     "Guava" to "Google",
     "Reorderable" to "Calvin Liang",
 )

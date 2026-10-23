@@ -25,8 +25,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -66,6 +68,7 @@ import brunoxnr.simplemusicplayer.ui.screens.PlaylistsScreen
 import brunoxnr.simplemusicplayer.ui.screens.QueueScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongCollectionScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongsScreen
+import java.text.Collator
 import kotlinx.coroutines.launch
 
 // Simple string routes, kept in a saveable back stack
@@ -112,10 +115,11 @@ fun MainScreen(vm: MusicViewModel) {
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
     val context = LocalContext.current
-    fun notify(message: String) {
+    fun notify(message: String, actionLabel: String? = null, onAction: () -> Unit = {}) {
         scope.launch {
             snackbarHostState.currentSnackbarData?.dismiss()
-            snackbarHostState.showSnackbar(message)
+            val result = snackbarHostState.showSnackbar(message, actionLabel, duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) onAction()
         }
     }
 
@@ -198,6 +202,17 @@ fun MainScreen(vm: MusicViewModel) {
                     onOpenFavorites = { backStack.add(ROUTE_FAVORITES) },
                     onOpenPlaylist = { backStack.add(PREFIX_PLAYLIST + it.id) },
                     onCreatePlaylist = { showCreatePlaylist = true },
+                    onReorder = vm::reorderPlaylists,
+                    onSortByName = {
+                        val previousOrder = playlists.map { it.id }
+                        val collator = Collator.getInstance()
+                        vm.reorderPlaylists(playlists.sortedWith(compareBy(collator) { it.name }).map { it.id })
+                        notify(
+                            resources.getString(R.string.message_playlists_sorted),
+                            actionLabel = resources.getString(R.string.action_undo),
+                            onAction = { vm.reorderPlaylists(previousOrder) },
+                        )
+                    },
                     modifier = contentModifier,
                 )
 

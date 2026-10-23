@@ -39,4 +39,6 @@ class LibraryRepository(private val dao: LibraryDao) {
     suspend fun removeSong(playlistId: Long, songId: Long) = dao.removeSongFromPlaylist(playlistId, songId)
 
     suspend fun reorder(playlistId: Long, songIds: List<Long>) = dao.replacePlaylistSongs(playlistId, songIds)
+
+    suspend fun reorderPlaylists(playlistIds: List<Long>) = dao.reorderPlaylists(playlistIds)
 }

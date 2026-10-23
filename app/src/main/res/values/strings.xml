@@ -109,6 +109,9 @@
         <item quantity="other">%1$d músicas adicionadas a “%2$s”</item>
     </plurals>
     <string name="message_playlist_updated">Playlist “%1$s” atualizada</string>
+    <string name="action_sort_by_name">Ordenar por nome</string>
+    <string name="message_playlists_sorted">Playlists em ordem alfabética</string>
+    <string name="action_undo">Desfazer</string>
     <string name="message_added_to_playlist">Adicionada a “%1$s”</string>
     <string name="message_removed_from_playlist">Removida de “%1$s”</string>
     <string name="action_share">Compartilhar</string>

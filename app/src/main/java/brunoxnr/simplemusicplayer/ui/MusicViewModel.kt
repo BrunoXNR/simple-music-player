@@ -115,4 +115,9 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
     fun reorderPlaylist(playlistId: Long, songIds: List<Long>) {
         viewModelScope.launch { repository.reorder(playlistId, songIds) }
     }
+
+    /** Saves the order of the playlists list (ids from top to bottom) */
+    fun reorderPlaylists(playlistIds: List<Long>) {
+        viewModelScope.launch { repository.reorderPlaylists(playlistIds) }
+    }
 }

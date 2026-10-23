@@ -113,6 +113,8 @@
     <string name="message_playlists_sorted">Playlists em ordem alfabética</string>
     <string name="action_undo">Desfazer</string>
     <string name="action_sort_by">Ordenar por…</string>
+    <string name="sort_duration_shortest">Duração (mais curtas primeiro)</string>
+    <string name="sort_duration_longest">Duração (mais longas primeiro)</string>
     <string name="message_playlist_sorted">Playlist “%1$s” reordenada</string>
     <string name="message_added_to_playlist">Adicionada a “%1$s”</string>
     <string name="message_removed_from_playlist">Removida de “%1$s”</string>

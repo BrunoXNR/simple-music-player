@@ -2,6 +2,7 @@ package brunoxnr.simplemusicplayer.ui
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -68,7 +69,6 @@ import brunoxnr.simplemusicplayer.ui.screens.PlaylistsScreen
 import brunoxnr.simplemusicplayer.ui.screens.QueueScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongCollectionScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongsScreen
-import brunoxnr.simplemusicplayer.ui.screens.labelRes
 import java.text.Collator
 import kotlinx.coroutines.launch
 
@@ -86,8 +86,16 @@ private val backStackSaver = listSaver<SnapshotStateList<String>, String>(
     restore = { it.toMutableStateList() },
 )
 
+private class PlaylistSortOption(val sort: SongSort, val ascending: Boolean, @StringRes val labelRes: Int)
+
 /** Sorts offered inside a playlist; "recently added" is left out since it is the file's date, not the playlist's */
-private val PLAYLIST_SORTS = listOf(SongSort.TITLE, SongSort.ARTIST, SongSort.ALBUM, SongSort.DURATION)
+private val PLAYLIST_SORTS = listOf(
+    PlaylistSortOption(SongSort.TITLE, true, R.string.sort_title),
+    PlaylistSortOption(SongSort.ARTIST, true, R.string.sort_artist),
+    PlaylistSortOption(SongSort.ALBUM, true, R.string.sort_album),
+    PlaylistSortOption(SongSort.DURATION, true, R.string.sort_duration_shortest),
+    PlaylistSortOption(SongSort.DURATION, false, R.string.sort_duration_longest),
+)
 
 /** Song whose "⋮" menu is open; [playlistId] is set when opened from inside a playlist */
 private data class ActionTarget(val song: Song, val playlistId: Long?)
@@ -309,13 +317,14 @@ fun MainScreen(vm: MusicViewModel) {
                                 }
                                 // Sorting rewrites the saved order once; songs can still be dragged afterwards
                                 DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
-                                    PLAYLIST_SORTS.forEach { sort ->
+                                    PLAYLIST_SORTS.forEach { option ->
                                         DropdownMenuItem(
-                                            text = { Text(stringResource(sort.labelRes())) },
+                                            text = { Text(stringResource(option.labelRes)) },
                                             onClick = {
                                                 sortMenuOpen = false
                                                 val previousOrder = playlist.songIds
-                                                vm.reorderPlaylist(playlist.id, playlistSongs.sortedBy(sort, true).map { it.id })
+                                                val sorted = playlistSongs.sortedBy(option.sort, option.ascending)
+                                                vm.reorderPlaylist(playlist.id, sorted.map { it.id })
                                                 notify(
                                                     resources.getString(R.string.message_playlist_sorted, playlist.name),
                                                     actionLabel = resources.getString(R.string.action_undo),

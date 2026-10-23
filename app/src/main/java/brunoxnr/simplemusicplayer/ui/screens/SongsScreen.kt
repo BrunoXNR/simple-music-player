@@ -312,7 +312,7 @@ private fun CountLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-private fun SongSort.labelRes(): Int = when (this) {
+internal fun SongSort.labelRes(): Int = when (this) {
     SongSort.TITLE -> R.string.sort_title
     SongSort.ARTIST -> R.string.sort_artist
     SongSort.ALBUM -> R.string.sort_album

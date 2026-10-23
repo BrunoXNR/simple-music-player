@@ -68,6 +68,7 @@ import brunoxnr.simplemusicplayer.ui.screens.PlaylistsScreen
 import brunoxnr.simplemusicplayer.ui.screens.QueueScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongCollectionScreen
 import brunoxnr.simplemusicplayer.ui.screens.SongsScreen
+import brunoxnr.simplemusicplayer.ui.screens.labelRes
 import java.text.Collator
 import kotlinx.coroutines.launch
 
@@ -84,6 +85,9 @@ private val backStackSaver = listSaver<SnapshotStateList<String>, String>(
     save = { it.toList() },
     restore = { it.toMutableStateList() },
 )
+
+/** Sorts offered inside a playlist; "recently added" is left out since it is the file's date, not the playlist's */
+private val PLAYLIST_SORTS = listOf(SongSort.TITLE, SongSort.ARTIST, SongSort.ALBUM, SongSort.DURATION)
 
 /** Song whose "⋮" menu is open; [playlistId] is set when opened from inside a playlist */
 private data class ActionTarget(val song: Song, val playlistId: Long?)
@@ -252,6 +256,7 @@ fun MainScreen(vm: MusicViewModel) {
                         LaunchedEffect(route) { backStack.remove(route) }
                     } else {
                         var menuOpen by remember { mutableStateOf(false) }
+                        var sortMenuOpen by remember { mutableStateOf(false) }
                         val playlistSongs = playlist.songIds.mapNotNull { songsById[it] }
                         SongCollectionScreen(
                             title = playlist.name,
@@ -278,6 +283,15 @@ fun MainScreen(vm: MusicViewModel) {
                                     Icon(Icons.Rounded.MoreVert, contentDescription = stringResource(R.string.action_more_options))
                                 }
                                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                    if (playlistSongs.size > 1) {
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.action_sort_by)) },
+                                            onClick = {
+                                                menuOpen = false
+                                                sortMenuOpen = true
+                                            },
+                                        )
+                                    }
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.action_rename)) },
                                         onClick = {
@@ -292,6 +306,24 @@ fun MainScreen(vm: MusicViewModel) {
                                             deletePlaylistId = playlist.id
                                         },
                                     )
+                                }
+                                // Sorting rewrites the saved order once; songs can still be dragged afterwards
+                                DropdownMenu(expanded = sortMenuOpen, onDismissRequest = { sortMenuOpen = false }) {
+                                    PLAYLIST_SORTS.forEach { sort ->
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(sort.labelRes())) },
+                                            onClick = {
+                                                sortMenuOpen = false
+                                                val previousOrder = playlist.songIds
+                                                vm.reorderPlaylist(playlist.id, playlistSongs.sortedBy(sort, true).map { it.id })
+                                                notify(
+                                                    resources.getString(R.string.message_playlist_sorted, playlist.name),
+                                                    actionLabel = resources.getString(R.string.action_undo),
+                                                    onAction = { vm.reorderPlaylist(playlist.id, previousOrder) },
+                                                )
+                                            },
+                                        )
+                                    }
                                 }
                             },
                         )

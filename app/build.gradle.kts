@@ -37,6 +37,11 @@ android {
     }
 
     buildTypes {
+        // Installs side by side with the Play Store version, so testing never touches its data
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = true

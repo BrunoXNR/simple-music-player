@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Debug builds are a separate app on the phone; tell them apart from the Play Store one -->
+    <string name="app_name" translatable="false">Simple Music Player Dev</string>
+    <string name="launcher_name" translatable="false">SimpleMP Dev</string>
+</resources>

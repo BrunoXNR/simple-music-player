@@ -171,6 +171,7 @@
     <string name="about_licenses_summary">Bibliotecas usadas por la app</string>
     <string name="about_licenses_intro">Simple Music Player usa estas bibliotecas de código abierto, todas bajo la Licencia Apache 2.0:</string>
     <string name="about_view_license">Ver licencia</string>
+    <string name="about_developed_by">desarrollado por</string>
 
     <!-- Permission -->
     <string name="permission_title">Acceso a tu música</string>

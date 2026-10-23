@@ -8,9 +8,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -46,6 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -80,65 +84,71 @@ fun AboutScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             },
         )
 
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                // Same layers as the launcher icon, so it follows any future icon redesign.
-                // Scaled 1.5x because launchers only show the central 72dp of the 108dp layer.
-                Box(
-                    modifier = Modifier
-                        .size(88.dp)
-                        .clip(CircleShape)
-                        .background(colorResource(R.color.ic_launcher_background)),
+        // Min height = viewport, so the weighted spacer can push the signature to the bottom
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).heightIn(min = maxHeight)) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Image(
-                        painterResource(R.drawable.ic_launcher_foreground),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize().scale(1.5f),
+                    // Same layers as the launcher icon, so it follows any future icon redesign.
+                    // Scaled 1.5x because launchers only show the central 72dp of the 108dp layer.
+                    Box(
+                        modifier = Modifier
+                            .size(88.dp)
+                            .clip(CircleShape)
+                            .background(colorResource(R.color.ic_launcher_background)),
+                    ) {
+                        Image(
+                            painterResource(R.drawable.ic_launcher_foreground),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize().scale(1.5f),
+                        )
+                    }
+                    Text(
+                        stringResource(R.string.app_name),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                    Text(
+                        stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        stringResource(R.string.about_tagline),
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(top = 8.dp),
                     )
                 }
-                Text(
-                    stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.padding(top = 12.dp),
-                )
-                Text(
-                    stringResource(R.string.about_version, BuildConfig.VERSION_NAME),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    stringResource(R.string.about_tagline),
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-            }
 
-            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-            AboutRow(
-                icon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
-                title = stringResource(R.string.about_privacy_title),
-                subtitle = stringResource(R.string.about_privacy_text),
-            )
-            if (supportEmail.isNotBlank()) {
                 AboutRow(
-                    icon = { Icon(Icons.Outlined.Email, contentDescription = null) },
-                    title = stringResource(R.string.about_support),
-                    subtitle = supportEmail,
-                    onClick = { context.sendEmail(supportEmail, emailSubject) },
+                    icon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                    title = stringResource(R.string.about_privacy_title),
+                    subtitle = stringResource(R.string.about_privacy_text),
                 )
+                if (supportEmail.isNotBlank()) {
+                    AboutRow(
+                        icon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                        title = stringResource(R.string.about_support),
+                        subtitle = supportEmail,
+                        onClick = { context.sendEmail(supportEmail, emailSubject) },
+                    )
+                }
+                AboutRow(
+                    icon = { Icon(Icons.Outlined.Code, contentDescription = null) },
+                    title = stringResource(R.string.about_licenses),
+                    subtitle = stringResource(R.string.about_licenses_summary),
+                    onClick = { showLicenses = true },
+                )
+
+                Spacer(Modifier.weight(1f))
+                DeveloperSignature(Modifier.padding(top = 32.dp, bottom = 24.dp))
             }
-            AboutRow(
-                icon = { Icon(Icons.Outlined.Code, contentDescription = null) },
-                title = stringResource(R.string.about_licenses),
-                subtitle = stringResource(R.string.about_licenses_summary),
-                onClick = { showLicenses = true },
-            )
         }
     }
 
@@ -190,6 +200,32 @@ private fun AboutRow(
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
     )
+}
+
+/** Discreet studio signature at the end of About, in theme colors so it fits every palette */
+@Composable
+private fun DeveloperSignature(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(
+            painterResource(R.drawable.ic_synnode_mark),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(40.dp),
+        )
+        Text(
+            stringResource(R.string.about_developed_by),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(
+            stringResource(R.string.developer_name),
+            style = MaterialTheme.typography.titleSmall,
+        )
+    }
 }
 
 private fun Context.sendEmail(address: String, subject: String) {

@@ -164,6 +164,7 @@
     <!-- About -->
     <!-- Support address shown on the About screen; the contact row stays hidden while it is empty -->
     <string name="support_email" translatable="false">contato.synnode@gmail.com</string>
+    <string name="developer_name" translatable="false">Synnode</string>
     <string name="about_title">About</string>
     <string name="about_version">Version %1$s</string>
     <string name="about_tagline">A simple music player. Free, no ads and offline.</string>
@@ -175,6 +176,7 @@
     <string name="about_licenses_summary">Libraries used by the app</string>
     <string name="about_licenses_intro">Simple Music Player uses these open source libraries, all under the Apache License 2.0:</string>
     <string name="about_view_license">View license</string>
+    <string name="about_developed_by">developed by</string>
 
     <!-- Permission -->
     <string name="permission_title">Access to your music</string>

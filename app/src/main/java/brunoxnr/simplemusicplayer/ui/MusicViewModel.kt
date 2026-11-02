@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class MusicViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -72,8 +73,22 @@ class MusicViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { loadLibrary() }
     }
 
+    private var uiLocale: Locale? = null
+    private var scannedLocale: Locale? = null
+
+    /**
+     * Called whenever the UI language may have changed. Placeholders like "Unknown artist" come
+     * from the scan, and this ViewModel outlives the activity being recreated in the new language.
+     */
+    fun onUiLocale(locale: Locale) {
+        uiLocale = locale
+        if (_libraryLoaded.value && locale != scannedLocale) viewModelScope.launch { loadLibrary() }
+    }
+
     private suspend fun loadLibrary() {
+        val locale = uiLocale
         _songs.value = app.scanner.scan()
+        scannedLocale = locale
         _libraryLoaded.value = true
     }
 

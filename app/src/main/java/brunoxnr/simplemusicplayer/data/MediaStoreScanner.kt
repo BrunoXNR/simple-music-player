@@ -15,7 +15,11 @@ import java.io.File
  * Reads the device's music library from the system MediaStore (no manual import needed:
  * Android already indexes every audio file on internal storage and SD cards).
  */
-class MediaStoreScanner(private val context: Context, private val renamedTitles: RenamedTitles) {
+class MediaStoreScanner(
+    private val context: Context,
+    private val renamedTitles: RenamedTitles,
+    private val settings: AppSettings,
+) {
 
     suspend fun scan(): List<Song> = withContext(Dispatchers.IO) {
         try {
@@ -44,8 +48,10 @@ class MediaStoreScanner(private val context: Context, private val renamedTitles:
             folderColumn,
         )
 
-        val unknownArtist = context.getString(R.string.unknown_artist)
-        val unknownAlbum = context.getString(R.string.unknown_album)
+        // Baked into each Song, so the library is rescanned when the language changes (MusicViewModel)
+        val strings = settings.localized(context)
+        val unknownArtist = strings.getString(R.string.unknown_artist)
+        val unknownAlbum = strings.getString(R.string.unknown_album)
         val songs = mutableListOf<Song>()
 
         context.contentResolver.query(

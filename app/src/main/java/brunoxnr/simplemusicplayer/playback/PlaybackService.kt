@@ -1,6 +1,7 @@
 package brunoxnr.simplemusicplayer.playback
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.OptIn
@@ -11,6 +12,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
@@ -40,6 +42,11 @@ class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private lateinit var stateStore: PlaybackStateStore
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    // Notification texts (ours and Media3's) in the in-app language
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext((newBase.applicationContext as MusicApplication).settings.localized(newBase))
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -93,6 +100,8 @@ class PlaybackService : MediaSessionService() {
             .setMediaButtonPreferences(listOf(closeButton))
             .build()
 
+        // Media3's default provider uses the application context, which misses the in-app language
+        setMediaNotificationProvider(DefaultMediaNotificationProvider.Builder(this).build())
         // A stopped player (the close button) has no notification; only paused/playing ones do
         setShowNotificationForIdlePlayer(SHOW_NOTIFICATION_FOR_IDLE_PLAYER_NEVER)
 

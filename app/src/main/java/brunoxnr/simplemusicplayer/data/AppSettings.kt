@@ -1,7 +1,9 @@
 package brunoxnr.simplemusicplayer.data
 
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
+import android.os.LocaleList
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import androidx.core.os.LocaleListCompat
@@ -62,7 +64,23 @@ class AppSettings(context: Context) {
     }
 
     fun setLanguage(language: AppLanguage) {
+        // Own copy for localized(): AppCompat only loads its stored choice once an activity starts
+        prefs.edit { putString(KEY_LANGUAGE, language.tag) }
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag))
+    }
+
+    /**
+     * [context] with the in-app language. On Android 12 and below AppCompat only applies it to
+     * activities, so texts built by the application or the playback service would otherwise stay
+     * in the system language. Android 13+ applies it to every context by itself.
+     */
+    fun localized(context: Context): Context {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return context
+        val tag = AppCompatDelegate.getApplicationLocales().toLanguageTags()
+            .ifEmpty { prefs.getString(KEY_LANGUAGE, null).orEmpty() }
+        if (tag.isEmpty()) return context
+        val config = Configuration(context.resources.configuration).apply { setLocales(LocaleList.forLanguageTags(tag)) }
+        return context.createConfigurationContext(config)
     }
 
     private fun ThemeMode.toNightMode(): Int = when (this) {
@@ -74,6 +92,7 @@ class AppSettings(context: Context) {
     companion object {
         private const val KEY_THEME_MODE = "theme_mode"
         private const val KEY_THEME_COLOR = "theme_color"
+        private const val KEY_LANGUAGE = "language"
 
         val isWallpaperColorAvailable: Boolean get() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     }

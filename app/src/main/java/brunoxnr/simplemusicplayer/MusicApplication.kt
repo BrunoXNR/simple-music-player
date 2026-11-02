@@ -20,6 +20,6 @@ class MusicApplication : Application() {
     val database by lazy { AppDatabase.create(this) }
     val libraryRepository by lazy { LibraryRepository(database.libraryDao()) }
     private val renamedTitles by lazy { RenamedTitles(this) }
-    val scanner by lazy { MediaStoreScanner(this, renamedTitles) }
+    val scanner by lazy { MediaStoreScanner(this, renamedTitles, settings) }
     val songFiles by lazy { SongFiles(this, renamedTitles) }
 }

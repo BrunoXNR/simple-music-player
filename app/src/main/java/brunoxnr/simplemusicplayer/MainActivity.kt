@@ -4,7 +4,9 @@ import android.os.Bundle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import brunoxnr.simplemusicplayer.ui.MainScreen
@@ -22,6 +24,8 @@ class MainActivity : AppCompatActivity() {
             val themeColor by settings.themeColor.collectAsStateWithLifecycle()
             SimpleMusicTheme(themeColor) {
                 val vm: MusicViewModel = viewModel()
+                val locale = LocalConfiguration.current.locales[0]
+                LaunchedEffect(locale) { vm.onUiLocale(locale) }
                 PermissionGate(onGranted = vm::onPermissionGranted) {
                     MainScreen(vm)
                 }

@@ -49,7 +49,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
@@ -147,7 +147,7 @@ fun AboutScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 )
 
                 Spacer(Modifier.weight(1f))
-                DeveloperSignature(Modifier.padding(top = 32.dp, bottom = 24.dp))
+                DeveloperSignature(Modifier.padding(top = 24.dp, bottom = 16.dp))
             }
         }
     }
@@ -202,29 +202,40 @@ private fun AboutRow(
     )
 }
 
-/** Discreet studio signature at the end of About, in theme colors so it fits every palette */
+/** Discreet studio signature at the end of About, in theme colors so it fits every palette. Tapping opens the studio website */
 @Composable
 private fun DeveloperSignature(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.fillMaxWidth().semantics(mergeDescendants = true) {},
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            painterResource(R.drawable.ic_synnode_mark),
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(40.dp),
-        )
-        Text(
-            stringResource(R.string.about_developed_by),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 8.dp),
-        )
-        Text(
-            stringResource(R.string.developer_name),
-            style = MaterialTheme.typography.titleSmall,
-        )
+    val context = LocalContext.current
+    val url = stringResource(R.string.developer_url)
+    Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Column(
+            modifier = Modifier
+                .clip(MaterialTheme.shapes.medium)
+                .clickable(
+                    onClickLabel = stringResource(R.string.about_visit_website),
+                    role = Role.Button,
+                    onClick = { context.openUrl(url) },
+                )
+                .padding(horizontal = 24.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_synnode_mark),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(40.dp),
+            )
+            Text(
+                stringResource(R.string.about_developed_by),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 8.dp),
+            )
+            Text(
+                stringResource(R.string.developer_name),
+                style = MaterialTheme.typography.titleSmall,
+            )
+        }
     }
 }
 
